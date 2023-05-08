@@ -5,8 +5,8 @@ namespace ParLibrary.Sllz
 {
     using System;
     using System.IO;
+    using System.IO.Compression;
     using System.Text;
-    using Ionic.Zlib;
     using Yarhl.FileFormat;
     using Yarhl.IO;
 
@@ -112,7 +112,7 @@ namespace ParLibrary.Sllz
             long currentPos = writer.Stream.Position;
             writer.Write(0x00000000); // Compressed size
             compressedDataStream.WriteTo(outputDataStream);
-            writer.Stream.Seek(currentPos, SeekOrigin.Begin);
+            writer.Stream.Seek(currentPos);
             writer.Write((int)(compressedDataStream.Length + 0x10)); // data + header
 
             compressedDataStream.Dispose();
@@ -290,15 +290,13 @@ namespace ParLibrary.Sllz
 
         private static byte[] ZlibCompress(byte[] decompressedData)
         {
-            using (var inputMemoryStream = new MemoryStream(decompressedData))
-            using (var outputMemoryStream = new MemoryStream())
-            using (var zlibStream = new ZlibStream(outputMemoryStream, CompressionMode.Compress, CompressionLevel.BestCompression))
-            {
-                inputMemoryStream.CopyTo(zlibStream);
-                zlibStream.Close();
+            using var inputMemoryStream = new MemoryStream(decompressedData);
+            using var outputMemoryStream = new MemoryStream();
+            using var zlibStream = new ZLibStream(outputMemoryStream, CompressionLevel.SmallestSize);
+            inputMemoryStream.CopyTo(zlibStream);
+            zlibStream.Close();
 
-                return outputMemoryStream.ToArray();
-            }
+            return outputMemoryStream.ToArray();
         }
     }
 }

@@ -5,8 +5,8 @@ namespace ParLibrary.Sllz
 {
     using System;
     using System.IO;
+    using System.IO.Compression;
     using System.Text;
-    using Ionic.Zlib;
     using Yarhl.FileFormat;
     using Yarhl.IO;
 
@@ -65,7 +65,7 @@ namespace ParLibrary.Sllz
             int decompressedSize = reader.ReadInt32();
             int compressedSize = reader.ReadInt32();
 
-            reader.Stream.Seek(headerSize, SeekOrigin.Begin);
+            reader.Stream.Seek(headerSize);
 
             if (version == 1)
             {
@@ -187,14 +187,12 @@ namespace ParLibrary.Sllz
 
         private static byte[] ZlibDecompress(byte[] compressedData, int index, int count)
         {
-            using (var inputMemoryStream = new MemoryStream(compressedData, index, count))
-            using (var outputMemoryStream = new MemoryStream())
-            using (var zlibStream = new ZlibStream(outputMemoryStream, CompressionMode.Decompress))
-            {
-                inputMemoryStream.CopyTo(zlibStream);
+            using var inputMemoryStream = new MemoryStream(compressedData, index, count);
+            using var outputMemoryStream = new MemoryStream();
+            using var zlibStream = new ZLibStream(outputMemoryStream, CompressionMode.Decompress);
+            inputMemoryStream.CopyTo(zlibStream);
 
-                return outputMemoryStream.ToArray();
-            }
+            return outputMemoryStream.ToArray();
         }
     }
 }
