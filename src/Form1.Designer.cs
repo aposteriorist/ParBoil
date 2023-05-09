@@ -28,39 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
-            listView1 = new ListView();
-            fileNumber = new ColumnHeader();
-            fileName = new ColumnHeader();
             menuStripMain = new MenuStrip();
             tSMI_File = new ToolStripMenuItem();
             tSMI_openPAR = new ToolStripMenuItem();
             tSMI_Help = new ToolStripMenuItem();
             tSMI_About = new ToolStripMenuItem();
-            treeView1 = new TreeView();
+            treeViewPar = new TreeView();
+            labelFileName = new Label();
             menuStripMain.SuspendLayout();
             SuspendLayout();
-            // 
-            // listView1
-            // 
-            listView1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
-            listView1.BackColor = Color.FromArgb(39, 38, 35);
-            listView1.BorderStyle = BorderStyle.FixedSingle;
-            listView1.Columns.AddRange(new ColumnHeader[] { fileNumber, fileName });
-            listView1.ForeColor = Color.FromArgb(213, 213, 213);
-            listView1.Location = new Point(0, 27);
-            listView1.Name = "listView1";
-            listView1.Size = new Size(500, 600);
-            listView1.TabIndex = 0;
-            listView1.UseCompatibleStateImageBehavior = false;
-            listView1.View = View.List;
-            // 
-            // fileNumber
-            // 
-            fileNumber.Text = "#";
-            // 
-            // fileName
-            // 
-            fileName.Text = "File Name";
             // 
             // menuStripMain
             // 
@@ -90,6 +66,7 @@
             tSMI_openPAR.Name = "tSMI_openPAR";
             tSMI_openPAR.Size = new Size(136, 22);
             tSMI_openPAR.Text = "Open PAR...";
+            tSMI_openPAR.Click += tSMI_openPAR_Click;
             // 
             // tSMI_Help
             // 
@@ -105,17 +82,29 @@
             tSMI_About.Size = new Size(116, 22);
             tSMI_About.Text = "About...";
             // 
-            // treeView1
+            // treeViewPar
             // 
-            treeView1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            treeView1.BackColor = Color.FromArgb(39, 38, 35);
-            treeView1.BorderStyle = BorderStyle.FixedSingle;
-            treeView1.ForeColor = Color.FromArgb(213, 213, 213);
-            treeView1.LineColor = Color.FromArgb(213, 213, 213);
-            treeView1.Location = new Point(509, 34);
-            treeView1.Name = "treeView1";
-            treeView1.Size = new Size(265, 301);
-            treeView1.TabIndex = 2;
+            treeViewPar.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            treeViewPar.BackColor = Color.FromArgb(39, 38, 35);
+            treeViewPar.BorderStyle = BorderStyle.FixedSingle;
+            treeViewPar.Font = new Font("Segoe UI", 8F, FontStyle.Regular, GraphicsUnit.Point);
+            treeViewPar.ForeColor = Color.FromArgb(213, 213, 213);
+            treeViewPar.Indent = 12;
+            treeViewPar.LineColor = Color.FromArgb(213, 213, 213);
+            treeViewPar.Location = new Point(12, 49);
+            treeViewPar.Name = "treeViewPar";
+            treeViewPar.PathSeparator = "/";
+            treeViewPar.Size = new Size(500, 600);
+            treeViewPar.TabIndex = 2;
+            // 
+            // labelFileName
+            // 
+            labelFileName.AutoSize = true;
+            labelFileName.Location = new Point(12, 31);
+            labelFileName.Name = "labelFileName";
+            labelFileName.Size = new Size(81, 15);
+            labelFileName.TabIndex = 3;
+            labelFileName.Text = "No file loaded";
             // 
             // mainForm
             // 
@@ -123,14 +112,15 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(60, 59, 55);
             ClientSize = new Size(784, 661);
-            Controls.Add(treeView1);
-            Controls.Add(listView1);
+            Controls.Add(labelFileName);
+            Controls.Add(treeViewPar);
             Controls.Add(menuStripMain);
             ForeColor = Color.FromArgb(213, 213, 213);
             MainMenuStrip = menuStripMain;
             Name = "mainForm";
             ShowIcon = false;
             Text = "ParBoil";
+            FormClosing += mainForm_FormClosing;
             menuStripMain.ResumeLayout(false);
             menuStripMain.PerformLayout();
             ResumeLayout(false);
@@ -138,15 +128,12 @@
         }
 
         #endregion
-
-        private ListView listView1;
         private MenuStrip menuStripMain;
         private ToolStripMenuItem tSMI_File;
         private ToolStripMenuItem tSMI_Help;
         private ToolStripMenuItem tSMI_About;
         private ToolStripMenuItem tSMI_openPAR;
-        private ColumnHeader fileNumber;
-        private ColumnHeader fileName;
-        private TreeView treeView1;
+        private TreeView treeViewPar;
+        private Label labelFileName;
     }
 }
