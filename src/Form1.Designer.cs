@@ -35,6 +35,7 @@
             tSMI_About = new ToolStripMenuItem();
             treeViewPar = new TreeView();
             labelFileName = new Label();
+            textBox_SelectedFileInfo = new TextBox();
             menuStripMain.SuspendLayout();
             SuspendLayout();
             // 
@@ -96,6 +97,7 @@
             treeViewPar.PathSeparator = "/";
             treeViewPar.Size = new Size(500, 600);
             treeViewPar.TabIndex = 2;
+            treeViewPar.AfterSelect += treeViewPar_AfterSelect;
             // 
             // labelFileName
             // 
@@ -106,12 +108,26 @@
             labelFileName.TabIndex = 3;
             labelFileName.Text = "No file loaded";
             // 
+            // textBox_SelectedFileInfo
+            // 
+            textBox_SelectedFileInfo.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            textBox_SelectedFileInfo.BackColor = Color.FromArgb(60, 59, 55);
+            textBox_SelectedFileInfo.BorderStyle = BorderStyle.None;
+            textBox_SelectedFileInfo.ForeColor = Color.FromArgb(213, 213, 213);
+            textBox_SelectedFileInfo.Location = new Point(522, 52);
+            textBox_SelectedFileInfo.Multiline = true;
+            textBox_SelectedFileInfo.Name = "textBox_SelectedFileInfo";
+            textBox_SelectedFileInfo.ReadOnly = true;
+            textBox_SelectedFileInfo.Size = new Size(252, 250);
+            textBox_SelectedFileInfo.TabIndex = 4;
+            // 
             // mainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(60, 59, 55);
             ClientSize = new Size(784, 661);
+            Controls.Add(textBox_SelectedFileInfo);
             Controls.Add(labelFileName);
             Controls.Add(treeViewPar);
             Controls.Add(menuStripMain);
@@ -135,5 +151,6 @@
         private ToolStripMenuItem tSMI_openPAR;
         private TreeView treeViewPar;
         private Label labelFileName;
+        private TextBox textBox_SelectedFileInfo;
     }
 }

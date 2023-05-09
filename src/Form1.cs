@@ -1,6 +1,7 @@
 using ParLibrary;
 using ParLibrary.Converter;
 using System.Diagnostics;
+using System.Xml.Linq;
 using Yarhl.FileSystem;
 using Yarhl.IO;
 
@@ -59,11 +60,13 @@ namespace ParBoil
                         }
                         parent.Nodes.Add(child);
                     }
+
+                    child.Tag = node;
                 }
 
                 foreach (TreeNode node in treeViewPar.Nodes)
                     if (node.Parent == null) node.Expand();
-                
+
                 treeViewPar.Nodes[0].EnsureVisible();
                 treeViewPar.EndUpdate();
             }
@@ -78,6 +81,18 @@ namespace ParBoil
         {
             if (par != null)
                 par.Dispose();
+        }
+
+        private string getFileType(Node node)
+        {
+            return node.Name[^4..^1];
+        }
+
+        private void treeViewPar_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            Node file = (Node)treeViewPar.SelectedNode.Tag;
+            textBox_SelectedFileInfo.Text = treeViewPar.SelectedNode.Name;
+            textBox_SelectedFileInfo.Text += $"\r\n\r\nSize in PAR: {file.Stream.Length} bytes";
         }
     }
 }
