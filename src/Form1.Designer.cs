@@ -1,6 +1,6 @@
 ﻿namespace ParBoil
 {
-    partial class mainForm
+    partial class MainForm
     {
         /// <summary>
         ///  Required designer variable.
@@ -98,6 +98,7 @@
             treeViewPar.Size = new Size(500, 600);
             treeViewPar.TabIndex = 2;
             treeViewPar.AfterSelect += treeViewPar_AfterSelect;
+            treeViewPar.NodeMouseDoubleClick += treeViewPar_NodeMouseDoubleClick;
             // 
             // labelFileName
             // 

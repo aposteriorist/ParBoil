@@ -1,5 +1,7 @@
+using ParBoil.RGGFormats;
 using ParLibrary;
 using ParLibrary.Converter;
+using ParLibrary.Sllz;
 using System.Diagnostics;
 using System.Xml.Linq;
 using Yarhl.FileSystem;
@@ -7,11 +9,11 @@ using Yarhl.IO;
 
 namespace ParBoil
 {
-    public partial class mainForm : Form
+    public partial class MainForm : Form
     {
         private Node par;
 
-        public mainForm()
+        public MainForm()
         {
             InitializeComponent();
         }
@@ -45,6 +47,7 @@ namespace ParBoil
                 {
                     child = new TreeNode(node.Name);
                     child.Name = node.Name;
+                    child.Tag = node;
 
                     if (parent == null || node.Parent.Name == labelFileName.Text)
                     {
@@ -60,8 +63,6 @@ namespace ParBoil
                         }
                         parent.Nodes.Add(child);
                     }
-
-                    child.Tag = node;
                 }
 
                 foreach (TreeNode node in treeViewPar.Nodes)
@@ -92,7 +93,44 @@ namespace ParBoil
         {
             Node file = (Node)treeViewPar.SelectedNode.Tag;
             textBox_SelectedFileInfo.Text = treeViewPar.SelectedNode.Name;
-            textBox_SelectedFileInfo.Text += $"\r\n\r\nSize in PAR: {file.Stream.Length} bytes";
+
+            if (file.IsContainer)
+            {
+                textBox_SelectedFileInfo.Text += $"\r\n\r\nNumber of files: {file.Children.Count}";
+            }
+            else
+            {
+                textBox_SelectedFileInfo.Text += $"\r\n\r\nSize in PAR: {file.Stream.Length} bytes";
+            }
         }
+
+        private void treeViewPar_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            Node file = (Node)treeViewPar.SelectedNode.Tag;
+
+            if (file.IsContainer)
+                return;
+
+            if (file.GetFormatAs<ParFile>().IsCompressed)
+                file.TransformWith<Decompressor>();
+            
+            switch (file.Name[^4..])
+            {
+                case ".msg":
+                    if (file.Format is not MSGFormat)
+                        file.TransformWith<MSGFormat>();
+                    displayMSG(file);
+                    break;
+            }
+        }
+
+        private void displayMSG (Node file)
+        {
+            if (file.Format is not MSGFormat)
+                return;
+
+            var editor = new FileEditorForm(file);
+            editor.Show();
+        }    
     }
 }
