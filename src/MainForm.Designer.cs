@@ -122,10 +122,12 @@
             textBox_SelectedFileInfo.Size = new Size(252, 250);
             textBox_SelectedFileInfo.TabIndex = 4;
             // 
-            // mainForm
+            // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            AutoSize = true;
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(60, 59, 55);
             ClientSize = new Size(784, 661);
             Controls.Add(textBox_SelectedFileInfo);
@@ -134,7 +136,7 @@
             Controls.Add(menuStripMain);
             ForeColor = Color.FromArgb(213, 213, 213);
             MainMenuStrip = menuStripMain;
-            Name = "mainForm";
+            Name = "MainForm";
             ShowIcon = false;
             Text = "ParBoil";
             FormClosing += mainForm_FormClosing;

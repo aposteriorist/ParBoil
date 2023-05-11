@@ -106,31 +106,52 @@ namespace ParBoil
 
         private void treeViewPar_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+            OpenFileFormat();
+        }
+
+        private void OpenFileFormat()
+        {
+            if (treeViewPar.SelectedNode == null) return;
+
+
             Node file = (Node)treeViewPar.SelectedNode.Tag;
 
-            if (file.IsContainer)
-                return;
+            if (file == null || file.IsContainer) return;
 
-            if (file.GetFormatAs<ParFile>().IsCompressed)
-                file.TransformWith<Decompressor>();
-            
+
+            if (file.Format is ParFile)
+            {
+                if (file.GetFormatAs<ParFile>().IsCompressed)
+                    file.TransformWith<Decompressor>();
+                TransformToFileTypeFormat(file);
+            }            
+
+            switch(file.Format)
+            {
+                case MSGFormat:
+                    OpenInFileEditor(file);
+                    break;
+            }            
+        }
+
+        private void TransformToFileTypeFormat (Node file)
+        {
             switch (file.Name[^4..])
             {
                 case ".msg":
                     if (file.Format is not MSGFormat)
                         file.TransformWith<MSGFormat>();
-                    displayMSG(file);
                     break;
             }
         }
 
-        private void displayMSG (Node file)
+        private void OpenInFileEditor(Node file)
         {
             if (file.Format is not MSGFormat)
                 return;
 
             var editor = new FileEditorForm(file);
             editor.Show();
-        }    
+        }
     }
 }
