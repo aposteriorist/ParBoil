@@ -40,5 +40,11 @@ namespace ParBoil
         {
             file.Resize();
         }
+
+        private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (file.EditCount > 0 && MessageBox.Show("", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                e.Cancel = true;
+        }
     }
 }

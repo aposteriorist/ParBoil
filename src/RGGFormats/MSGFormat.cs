@@ -1,4 +1,5 @@
 ﻿using ParLibrary;
+using System.Composition;
 using System.Diagnostics;
 using System.Text;
 using Yarhl.FileFormat;
@@ -14,7 +15,9 @@ namespace ParBoil.RGGFormats
 
         public Section[] sections { get; set; }
         public MiscEntry[] misc { get; set; }
+        public Event[] events { get; set; }
         public override Control Handle { get; set; }
+        public override uint EditCount { get; set; }
 
         public struct MiscEntry
         {
@@ -51,6 +54,16 @@ namespace ParBoil.RGGFormats
             public byte type;
             public byte subtype;
             public ushort[] args;
+        }
+
+        public struct Event
+        {
+            string Type;
+            int Index;
+            string TagType;
+            uint TagLength;
+            uint[] RGBA;
+            string SignID;
         }
 
         public MSGFormat Convert (ParFile source)
@@ -145,10 +158,10 @@ namespace ParBoil.RGGFormats
 
                         reader.Stream.Seek(message.pointer);
                         message.export = reader.ReadString();
+                        message.import = message.export;
                         message.speakerIndex = message.functions[0].args[3];
                         if (message.speakerIndex >= msg.misc.Length)
                             message.speakerIndex = -1;
-                            //message.speakerExport = msg.misc[message.speakerIndex].export;
 
                         header.messages[m] = message;
 
@@ -183,8 +196,11 @@ namespace ParBoil.RGGFormats
         private MiscEntry[] buffer_misc;
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
         {
-            buffer_misc = new MiscEntry[misc.Length];
-            misc.CopyTo(buffer_misc, 0);
+            if (buffer_misc == null)
+            {
+                buffer_misc = new MiscEntry[misc.Length];
+                misc.CopyTo(buffer_misc, 0);
+            }
 
             // Tabs are ugly. Could I do this custom with menu strips or buttons?
             // I already have one panel per tab, all I should need to do is attach that panel to a generated button,
@@ -223,7 +239,8 @@ namespace ParBoil.RGGFormats
                     //BackColor = Color.FromArgb(65, 65, 65),
                     BackColor = formBackColor,
                     AutoScroll = true,
-                    Margin = new Padding(0,20,0,0),
+                    Margin = new Padding(0, 20, 0, 0),
+                    Tag = false,
                 };
 
                 var export = new TextBox()
@@ -236,6 +253,7 @@ namespace ParBoil.RGGFormats
                     Text = misc[m].export,
                     ReadOnly = true,
                     Margin = new Padding(30,0,15,0),
+                    Tag = m,
                 };
 
                 var import = new TextBox()
@@ -249,7 +267,11 @@ namespace ParBoil.RGGFormats
                     Margin = new Padding(15,0,3,0),
                     Tag = m,             
                 };
-                import.LostFocus += delegate { UpdateSpeaker((int)import.Tag, import.Text); };
+                import.LostFocus += delegate
+                {
+                    panel.Tag = misc[(int)import.Tag].export == import.Text;
+                    UpdateSpeaker((int)import.Tag, import.Text);
+                };
 
                 panel.Controls.Add(export);
                 panel.Controls.Add(import);
@@ -340,6 +362,7 @@ namespace ParBoil.RGGFormats
                                 Width = 120,
                                 Height = 20,
                                 BackColor = panel.BackColor,
+                                ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
                                 Text = misc[header.messages[i].speakerIndex].export,
@@ -354,6 +377,7 @@ namespace ParBoil.RGGFormats
                                 Width = 120,
                                 Height = 20,
                                 BackColor = panel.BackColor,
+                                ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
                                 Text = misc[header.messages[i].speakerIndex].import,
@@ -375,11 +399,11 @@ namespace ParBoil.RGGFormats
                             Height = 140,
                             Width = exportPanel.Width - 2,
                             BackColor = panel.BackColor,
+                            ForeColor = formForeColor,
                             Font = formFont,
-                            // BorderStyle = BorderStyle.None,
-                            Text = header.messages[i].export,
                             ReadOnly = true,
                         };
+                        InitializeText(textExport, header.messages[i], false);
                         exportPanel.Controls.Add(textExport);
 
                         var textImport = new RichTextBox()
@@ -387,31 +411,16 @@ namespace ParBoil.RGGFormats
                             Height = 140,
                             Width = exportPanel.Width - 2,
                             BackColor = formEditableColor,
+                            ForeColor = formForeColor,
                             Font = formFont,
-                            // BorderStyle = BorderStyle.None,
-                            Text = header.messages[i].export,
                         };
-                        if (textImport.Text == "")
-                        {
-                            textImport.ReadOnly = true;
-                        }
+                        InitializeText(textImport, header.messages[i], true);
+                        if (textImport.Text == "") textImport.ReadOnly = true;
                         importPanel.Controls.Add(textImport);
-
-                        foreach (Control control in exportPanel.Controls)
-                        {
-                            control.ForeColor = formForeColor;
-                        }
-                        foreach (Control control in importPanel.Controls)
-                        {
-                            control.ForeColor = formForeColor;
-                        }
-
-                        //panel.Margin = new Padding(0, 0, 0, 40);
 
                         panel.Controls.Add(exportPanel);
                         panel.Controls.Add(importPanel);
 
-                        //mainPanel.Controls.Add(panel);
                         mp.Controls.Add(panel);
                         headerTab.Controls.Add(mp);
                     }
@@ -521,7 +530,7 @@ namespace ParBoil.RGGFormats
                         {
                             var speakerImport = (TextBox)importPanel.Controls[0];
 
-                            if (speakerImport.Tag != null && (int)(speakerImport.Tag) == entry)
+                            if ((int)speakerImport.Tag == entry)
                                 speakerImport.Text = import;
                         }
                     }
@@ -529,6 +538,50 @@ namespace ParBoil.RGGFormats
             }
 
             buffer_misc[entry].import = import;
+        }
+
+        // TO-DO: private void UpdateText
+        //  When the text changes in the textbox, update the function table as a separate function.
+
+        private void InitializeText(RichTextBox box, Message msg, bool import)
+        {
+            string text = import ? msg.import : msg.export;
+
+            if (text == null || text.Length == 0) return;
+
+            int ignored = 0;
+            int crlf = 0;
+            int disc = 0;
+
+            foreach (var func in msg.functions)
+            {
+                if (func.type == 2)
+                {
+                    switch (func.subtype)
+                    {
+                        case 7:
+                            disc = text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)].Count(f => f == '\r');
+                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf + disc)]);
+                            ignored += func.args[4];
+                            crlf += disc;
+                            box.SelectionColor = Color.FromArgb(func.args[5], func.args[6], func.args[7], func.args[8]);
+                            box.ScrollToCaret();
+                            break;
+                        case 8:
+                            // Assumption: CRLF will never be encountered as coloured text.
+                            //disc = text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)].Count(f => f == '\r');
+                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)]);
+                            box.SelectionColor = box.ForeColor;
+                            box.ScrollToCaret();
+                            //crlf += disc;
+                            ignored += func.args[4];
+                            break;
+                    }
+                }
+            }
+
+            if (box.TextLength + ignored + crlf < msg.export.Length)
+                box.AppendText(text[(box.TextLength + ignored + crlf)..]);
         }
 
         public void topTabs_GotFocus(object sender, EventArgs e)
