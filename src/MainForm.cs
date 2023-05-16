@@ -29,6 +29,9 @@ namespace ParBoil
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
+                if (! File.Exists(dialogue.FileName + ".orig"))
+                    File.Copy(dialogue.FileName, dialogue.FileName + ".orig");
+
                 var parameters = new ParArchiveReaderParameters { Recursive = false, };
 
                 par = NodeFactory.FromFile(dialogue.FileName);
