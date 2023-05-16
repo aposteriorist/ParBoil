@@ -27,7 +27,7 @@ namespace ParBoil.RGGFormats
         {
             public uint Pointer;
             public string Export;
-            internal string Import;
+            public string Import;
         }
 
         public struct Section
@@ -59,7 +59,7 @@ namespace ParBoil.RGGFormats
             public string[] Functions;
             internal int SpeakerIndex;
             public string Export;
-            internal string Import;
+            public string Import;
         }
         public struct Function
         {

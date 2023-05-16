@@ -17,9 +17,11 @@ namespace ParBoil
 {
     public partial class FileEditorForm : Form
     {
-        public FileEditorForm(Node node)
+        public FileEditorForm(string path, Node node)
         {
             InitializeComponent();
+
+            this.path = path;
 
             file = node.GetFormatAs<RGGFormat>();
             Text += node.Name;
@@ -36,8 +38,9 @@ namespace ParBoil
             Refresh();
         }
 
-        public string name;
-        public RGGFormat file;
+        private string path; // Ends with '/'
+        private string name;
+        private RGGFormat file;
 
         private Color EditableColor = Color.FromArgb(45, 45, 45);
 
@@ -58,7 +61,7 @@ namespace ParBoil
         private void FileToJSON()
         {
             //File.WriteAllText($"{name}.json", file.ToJSONString(), Encoding.UTF8);
-            File.WriteAllBytes($"{name}.json", file.ToJSON());
+            File.WriteAllBytes($"{path}{name}.json", file.ToJSON());
         }
     }
 }

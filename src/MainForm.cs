@@ -12,6 +12,7 @@ namespace ParBoil
     public partial class MainForm : Form
     {
         private Node par;
+        private string project;
 
         public MainForm()
         {
@@ -29,8 +30,14 @@ namespace ParBoil
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
-                if (! File.Exists(dialogue.FileName + ".orig"))
-                    File.Copy(dialogue.FileName, dialogue.FileName + ".orig");
+                project = dialogue.FileName + ".boil/";
+
+                if (!Directory.Exists(project))
+                    Directory.CreateDirectory(project);
+
+                if (!File.Exists(project + dialogue.SafeFileName + ".orig"))
+                    File.Copy(dialogue.FileName, project + dialogue.SafeFileName + ".orig");
+
 
                 var parameters = new ParArchiveReaderParameters { Recursive = false, };
 
@@ -153,7 +160,7 @@ namespace ParBoil
             if (file.Format is not MSGFormat)
                 return;
 
-            var editor = new FileEditorForm(file);
+            var editor = new FileEditorForm(project, file);
             editor.Show();
         }
     }
