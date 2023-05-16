@@ -32,5 +32,8 @@ namespace ParBoil.RGGFormats
         public abstract void Resize();
 
         public abstract Type TypeOfHandle();
+
+        public abstract byte[] ToJSON();
+        public abstract string ToJSONString();
     }
 }

@@ -2,6 +2,10 @@
 using System.Composition;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Unicode;
 using Yarhl.FileFormat;
 using Yarhl.IO;
 
@@ -21,39 +25,47 @@ namespace ParBoil.RGGFormats
 
         public struct MiscEntry
         {
-            public uint pointer;
-            public string export;
-            public string import;
+            public uint Pointer;
+            public string Export;
+            internal string Import;
         }
 
         public struct Section
         {
-            public uint pointer;
-            public uint headerCount;
-            public Header[] headers;
+            [JsonPropertyName("Section Pointer")]
+            public uint Pointer;
+            [JsonPropertyName("Header Count")]
+            public uint HeaderCount;
+            public Header[] Headers;
         }
         public struct Header
         {
-            public uint pointer;
-            public uint messageCount;
-            public Message[] messages;
+            [JsonPropertyName("Header Pointer")]
+            public uint Pointer;
+            [JsonPropertyName("Message Count")]
+            public uint MessageCount;
+            public Message[] Messages;
         }
         public struct Message
         {
-            public uint bytecount;
-            public byte functionCount;
-            public uint pointer;
-            public uint functionTable;
-            public Function[] functions;
-            public string export;
-            public string import;
-            public int speakerIndex;
+            public uint Bytecount;
+            [JsonPropertyName("Function Count")]
+            public byte FunctionCount;
+            [JsonPropertyName("Message Pointer")]
+            public uint Pointer;
+            [JsonPropertyName("Function Table")]
+            public uint FunctionTable;
+            internal Function[] _functions;
+            public string[] Functions;
+            internal int SpeakerIndex;
+            public string Export;
+            internal string Import;
         }
         public struct Function
         {
-            public byte type;
-            public byte subtype;
-            public ushort[] args;
+            public byte Type;
+            public byte Subtype;
+            public short[] Args;
         }
 
         public struct Event
@@ -91,10 +103,10 @@ namespace ParBoil.RGGFormats
             for (int e = 0; e < miscount; e++)
             {
                 var misc = new MiscEntry();
-                misc.pointer = reader.ReadUInt32();
-                reader.Stream.PushToPosition(misc.pointer);
-                misc.export = reader.ReadString();
-                misc.import = misc.export;
+                misc.Pointer = reader.ReadUInt32();
+                reader.Stream.PushToPosition(misc.Pointer);
+                misc.Export = reader.ReadString();
+                misc.Import = misc.Export;
                 reader.Stream.PopPosition();
 
                 msg.misc[e] = misc;
@@ -109,66 +121,72 @@ namespace ParBoil.RGGFormats
             for (int s = 0; s < chairs; s++)
             {
                 var section = new Section();
-                section.headerCount = reader.ReadUInt16();
-                section.pointer = reader.ReadUInt32();
-                section.headers = new Header[section.headerCount];
+                section.HeaderCount = reader.ReadUInt16();
+                section.Pointer = reader.ReadUInt32();
+                section.Headers = new Header[section.HeaderCount];
 
-                reader.Stream.PushToPosition(section.pointer + 4);
+                reader.Stream.PushToPosition(section.Pointer + 4);
 
-                for (int h = 0; h < section.headerCount; h++)
+                for (int h = 0; h < section.HeaderCount; h++)
                 {
                     var header = new Header();
-                    header.pointer = reader.ReadUInt32();
-                    header.messageCount = reader.ReadUInt16();
-                    header.messages = new Message[header.messageCount];
+                    header.Pointer = reader.ReadUInt32();
+                    header.MessageCount = reader.ReadUInt16();
+                    header.Messages = new Message[header.MessageCount];
 
-                    reader.Stream.PushToPosition(header.pointer);
+                    reader.Stream.PushToPosition(header.Pointer);
 
-                    for (int m = 0; m < header.messageCount; m++)
+                    for (int m = 0; m < header.MessageCount; m++)
                     {
                         var message = new Message();
-                        message.bytecount = reader.ReadUInt16();
-                        message.functionCount = reader.ReadByte();
+                        message.Bytecount = reader.ReadUInt16();
+                        message.FunctionCount = reader.ReadByte();
                         reader.Stream.Position++;
-                        message.pointer = reader.ReadUInt32();
-                        message.functionTable = reader.ReadUInt32();
-                        message.functions = new Function[message.functionCount];
+                        message.Pointer = reader.ReadUInt32();
+                        message.FunctionTable = reader.ReadUInt32();
+                        message._functions = new Function[message.FunctionCount];
+                        message.Functions = new string[message.FunctionCount];
 
-                        reader.Stream.PushToPosition(message.functionTable);
+                        reader.Stream.PushToPosition(message.FunctionTable);
 
-                        for (int f = 0; f < message.functionCount; f++)
+                        for (int f = 0; f < message.FunctionCount; f++)
                         {
                             var function = new Function();
-                            function.type = reader.ReadByte();
-                            function.subtype = reader.ReadByte();
-                            function.args = new ushort[9];
+                            function.Type = reader.ReadByte();
+                            function.Subtype = reader.ReadByte();
+                            function.Args = new short[9];
 
-                            function.args[0] = reader.ReadUInt16();
-                            function.args[1] = reader.ReadUInt16();
-                            function.args[2] = reader.ReadUInt16();
-                            function.args[3] = reader.ReadUInt16();
-                            function.args[4] = reader.ReadUInt16();
-                            function.args[5] = reader.ReadByte();
-                            function.args[6] = reader.ReadByte();
-                            function.args[7] = reader.ReadByte();
-                            function.args[8] = reader.ReadByte();
+                            function.Args[0] = reader.ReadInt16();
+                            function.Args[1] = reader.ReadInt16();
+                            function.Args[2] = reader.ReadInt16();
+                            function.Args[3] = reader.ReadInt16();
+                            function.Args[4] = reader.ReadInt16();
+                            function.Args[5] = reader.ReadByte();
+                            function.Args[6] = reader.ReadByte();
+                            function.Args[7] = reader.ReadByte();
+                            function.Args[8] = reader.ReadByte();
 
-                            message.functions[f] = function;
+                            message.Functions[f] = String.Format("{0:X2} {1:X2} ({2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
+                                function.Type, function.Subtype, function.Args[0], function.Args[1],
+                                function.Args[2], function.Args[3], function.Args[4], function.Args[5],
+                                function.Args[6], function.Args[7], function.Args[8]);
+
+                            message._functions[f] = function;
                         }
 
-                        reader.Stream.Seek(message.pointer);
-                        message.export = reader.ReadString();
-                        message.import = message.export;
-                        message.speakerIndex = message.functions[0].args[3];
-                        if (message.speakerIndex >= msg.misc.Length)
-                            message.speakerIndex = -1;
+                        reader.Stream.Seek(message.Pointer);
+                        message.Export = reader.ReadString();
+                        message.Import = message.Export;
+                        message.SpeakerIndex = message._functions[0].Args[3];
+                        if (message.SpeakerIndex >= msg.misc.Length)
+                            message.SpeakerIndex = -1;
 
-                        header.messages[m] = message;
+                        header.Messages[m] = message;
 
                         reader.Stream.PopPosition();
                     }
 
-                    section.headers[h] = header;
+                    section.Headers[h] = header;
 
                     reader.Stream.PopPosition();
                     reader.Stream.Position += 10;
@@ -178,24 +196,50 @@ namespace ParBoil.RGGFormats
 
                 reader.Stream.PopPosition();
                 reader.Stream.Position += 6;
-            }
-
-            // msg.GenerateControls();
+            }            
 
             return msg;
+        }
+
+        public bool JSONExists()
+        {
+            return true;
+        }
+
+        public override string ToJSONString()
+        {
+            var opts = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            };
+            return JsonSerializer.Serialize(new object[2] { misc, sections }, opts);
+        }
+
+        public override byte[] ToJSON()
+        {
+            var opts = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            };
+            return JsonSerializer.SerializeToUtf8Bytes(new object[2] { misc, sections }, opts);
         }
 
         public void gimme()
         {
             foreach (var s in sections)
-                foreach (var h in s.headers)
-                    foreach (var m in h.messages)
-                        Debug.WriteLine(m.export);
+                foreach (var h in s.Headers)
+                    foreach (var m in h.Messages)
+                        Debug.WriteLine(m.Export);
         }
 
         private MiscEntry[] buffer_misc;
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
         {
+            //binToJSON();
             if (buffer_misc == null)
             {
                 buffer_misc = new MiscEntry[misc.Length];
@@ -250,7 +294,7 @@ namespace ParBoil.RGGFormats
                     BackColor = panel.BackColor,
                     ForeColor = formForeColor,
                     Font = formFont,
-                    Text = misc[m].export,
+                    Text = misc[m].Export,
                     ReadOnly = true,
                     Margin = new Padding(30,0,15,0),
                     Tag = m,
@@ -263,13 +307,13 @@ namespace ParBoil.RGGFormats
                     BackColor = formEditableColor,
                     ForeColor = formForeColor,
                     Font = formFont,
-                    Text = misc[m].import,
+                    Text = misc[m].Import,
                     Margin = new Padding(15,0,3,0),
                     Tag = m,             
                 };
                 import.LostFocus += delegate
                 {
-                    panel.Tag = misc[(int)import.Tag].export == import.Text;
+                    panel.Tag = misc[(int)import.Tag].Export == import.Text;
                     UpdateSpeaker((int)import.Tag, import.Text);
                 };
 
@@ -300,9 +344,9 @@ namespace ParBoil.RGGFormats
                     //Appearance = TabAppearance.Buttons,
                 };
 
-                for (int h = 0; h < section.headers.Length; h++)
+                for (int h = 0; h < section.Headers.Length; h++)
                 {
-                    var header = section.headers[h];
+                    var header = section.Headers[h];
 
                     TabPage headerTab = new TabPage()
                     {
@@ -313,7 +357,7 @@ namespace ParBoil.RGGFormats
                         BorderStyle = BorderStyle.None,
                         Margin = new Padding(0),
                     };
-                    if (header.messageCount > 1) headerTab.Text += $" ({header.messageCount})";
+                    if (header.MessageCount > 1) headerTab.Text += $" ({header.MessageCount})";
 
                     var mp = new FlowLayoutPanel();
                     mp.Height = headerTab.Height;
@@ -323,7 +367,7 @@ namespace ParBoil.RGGFormats
                     mp.Margin = new Padding(0);
                     //mp.Dock = DockStyle.Fill;
 
-                    for (int i = 0; i < header.messageCount; i++)
+                    for (int i = 0; i < header.MessageCount; i++)
                     {
                         var panel = new FlowLayoutPanel()
                         {
@@ -355,7 +399,7 @@ namespace ParBoil.RGGFormats
                             Margin = new Padding(0, 0, 0, 0),
                         };
 
-                        if (header.messages[i].speakerIndex >= 0)
+                        if (header.Messages[i].SpeakerIndex >= 0)
                         {
                             var speakerExport = new TextBox()
                             {
@@ -365,10 +409,10 @@ namespace ParBoil.RGGFormats
                                 ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
-                                Text = misc[header.messages[i].speakerIndex].export,
+                                Text = misc[header.Messages[i].SpeakerIndex].Export,
                                 ReadOnly = true,
                                 // Margin = new Padding(0, 0, exportPanel.Width, 3);
-                                Tag = header.messages[i].speakerIndex,
+                                Tag = header.Messages[i].SpeakerIndex,
                             };
                             exportPanel.Controls.Add(speakerExport);
 
@@ -380,10 +424,10 @@ namespace ParBoil.RGGFormats
                                 ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
-                                Text = misc[header.messages[i].speakerIndex].import,
+                                Text = misc[header.Messages[i].SpeakerIndex].Import,
                                 ReadOnly = true,
                                 // Margin = new Padding(0, 0, importPanel.Width, 3),
-                                Tag = header.messages[i].speakerIndex,
+                                Tag = header.Messages[i].SpeakerIndex,
                             };
                             importPanel.Controls.Add(speakerImport);
                         }
@@ -403,7 +447,7 @@ namespace ParBoil.RGGFormats
                             Font = formFont,
                             ReadOnly = true,
                         };
-                        InitializeText(textExport, header.messages[i], false);
+                        InitializeText(textExport, header.Messages[i], false);
                         exportPanel.Controls.Add(textExport);
 
                         var textImport = new RichTextBox()
@@ -414,7 +458,7 @@ namespace ParBoil.RGGFormats
                             ForeColor = formForeColor,
                             Font = formFont,
                         };
-                        InitializeText(textImport, header.messages[i], true);
+                        InitializeText(textImport, header.Messages[i], true);
                         if (textImport.Text == "") textImport.ReadOnly = true;
                         importPanel.Controls.Add(textImport);
 
@@ -510,7 +554,7 @@ namespace ParBoil.RGGFormats
 
         private void UpdateSpeaker (int entry, string import)
         {
-            if (buffer_misc[entry].import == import)
+            if (buffer_misc[entry].Import == import)
                 return;
 
             var topTabs = (TabControl)Handle;
@@ -537,7 +581,7 @@ namespace ParBoil.RGGFormats
                 }
             }
 
-            buffer_misc[entry].import = import;
+            buffer_misc[entry].Import = import;
         }
 
         // TO-DO: private void UpdateText
@@ -545,7 +589,7 @@ namespace ParBoil.RGGFormats
 
         private void InitializeText(RichTextBox box, Message msg, bool import)
         {
-            string text = import ? msg.import : msg.export;
+            string text = import ? msg.Import : msg.Export;
 
             if (text == null || text.Length == 0) return;
 
@@ -553,34 +597,34 @@ namespace ParBoil.RGGFormats
             int crlf = 0;
             int disc = 0;
 
-            foreach (var func in msg.functions)
+            foreach (var func in msg._functions)
             {
-                if (func.type == 2)
+                if (func.Type == 2)
                 {
-                    switch (func.subtype)
+                    switch (func.Subtype)
                     {
                         case 7:
-                            disc = text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)].Count(f => f == '\r');
-                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf + disc)]);
-                            ignored += func.args[4];
+                            disc = text[(box.TextLength + ignored + crlf)..(func.Args[2] + ignored + crlf)].Count(f => f == '\r');
+                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.Args[2] + ignored + crlf + disc)]);
+                            ignored += func.Args[4];
                             crlf += disc;
-                            box.SelectionColor = Color.FromArgb(func.args[5], func.args[6], func.args[7], func.args[8]);
+                            box.SelectionColor = Color.FromArgb(func.Args[5], func.Args[6], func.Args[7], func.Args[8]);
                             box.ScrollToCaret();
                             break;
                         case 8:
                             // Assumption: CRLF will never be encountered as coloured text.
                             //disc = text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)].Count(f => f == '\r');
-                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)]);
+                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.Args[2] + ignored + crlf)]);
                             box.SelectionColor = box.ForeColor;
                             box.ScrollToCaret();
                             //crlf += disc;
-                            ignored += func.args[4];
+                            ignored += func.Args[4];
                             break;
                     }
                 }
             }
 
-            if (box.TextLength + ignored + crlf < msg.export.Length)
+            if (box.TextLength + ignored + crlf < msg.Export.Length)
                 box.AppendText(text[(box.TextLength + ignored + crlf)..]);
         }
 

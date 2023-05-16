@@ -7,6 +7,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Yarhl.FileSystem;
@@ -21,14 +22,18 @@ namespace ParBoil
 
             file = node.GetFormatAs<RGGFormat>();
             Text += node.Name;
+            name = node.Name;
 
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, Mincho);
             Controls.Clear();
             Controls.Add(file.Handle);
 
+            FileToJSON();
+
             Refresh();
         }
 
+        public string name;
         public RGGFormat file;
 
         private Color EditableColor = Color.FromArgb(45, 45, 45);
@@ -45,6 +50,12 @@ namespace ParBoil
         {
             if (file.EditCount > 0 && MessageBox.Show("", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
                 e.Cancel = true;
+        }
+
+        private void FileToJSON()
+        {
+            //File.WriteAllText($"{name}.json", file.ToJSONString(), Encoding.UTF8);
+            File.WriteAllBytes($"{name}.json", file.ToJSON());
         }
     }
 }
