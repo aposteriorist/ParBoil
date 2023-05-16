@@ -20,7 +20,7 @@ namespace ParBoil.RGGFormats
         public Section[] sections { get; set; }
         public MiscEntry[] misc { get; set; }
         public Event[] events { get; set; }
-        public override Control Handle { get; set; }
+        internal override Control Handle { get; set; }
         public override uint EditCount { get; set; }
 
         public struct MiscEntry
@@ -78,16 +78,19 @@ namespace ParBoil.RGGFormats
             string SignID;
         }
 
-        public MSGFormat Convert (ParFile source)
+        public MSGFormat Convert(ParFile source)
         {
             if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var msg = new MSGFormat(source.Stream, 0, source.Stream.Length);
+            return new MSGFormat(source.Stream, 0, source.Stream.Length);
+        }
 
-            var reader = new DataReader(source.Stream) {
+        public override void Load()
+        { 
+            var reader = new DataReader(Stream) {
                 DefaultEncoding = Encoding.GetEncoding(932),
                 Endianness = EndiannessMode.BigEndian,
             };
@@ -98,25 +101,25 @@ namespace ParBoil.RGGFormats
             int misc_ptr = reader.ReadInt32();
             short miscount = reader.ReadInt16();
 
-            msg.misc = new MiscEntry[miscount];
+            misc = new MiscEntry[miscount];
             reader.Stream.Seek(misc_ptr);
             for (int e = 0; e < miscount; e++)
             {
-                var misc = new MiscEntry();
-                misc.Pointer = reader.ReadUInt32();
-                reader.Stream.PushToPosition(misc.Pointer);
-                misc.Export = reader.ReadString();
-                misc.Import = misc.Export;
+                var entry = new MiscEntry();
+                entry.Pointer = reader.ReadUInt32();
+                reader.Stream.PushToPosition(entry.Pointer);
+                entry.Export = reader.ReadString();
+                entry.Import = entry.Export;
                 reader.Stream.PopPosition();
 
-                msg.misc[e] = misc;
+                misc[e] = entry;
             }
 
             reader.Stream.Seek(table_ptr);
             uint table = reader.ReadUInt32();
             ushort chairs = reader.ReadUInt16();
 
-            msg.sections = new Section[chairs];
+            sections = new Section[chairs];
             reader.Stream.Seek(table + 6);
             for (int s = 0; s < chairs; s++)
             {
@@ -178,7 +181,7 @@ namespace ParBoil.RGGFormats
                         message.Export = reader.ReadString();
                         message.Import = message.Export;
                         message.SpeakerIndex = message._functions[0].Args[3];
-                        if (message.SpeakerIndex >= msg.misc.Length)
+                        if (message.SpeakerIndex >= misc.Length)
                             message.SpeakerIndex = -1;
 
                         header.Messages[m] = message;
@@ -192,18 +195,11 @@ namespace ParBoil.RGGFormats
                     reader.Stream.Position += 10;
                 }
 
-                msg.sections[s] = section;
+                sections[s] = section;
 
                 reader.Stream.PopPosition();
                 reader.Stream.Position += 6;
-            }            
-
-            return msg;
-        }
-
-        public bool JSONExists()
-        {
-            return true;
+            }
         }
 
         public override string ToJSONString()
