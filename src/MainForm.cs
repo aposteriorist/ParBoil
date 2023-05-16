@@ -30,7 +30,7 @@ namespace ParBoil
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
-                project = dialogue.FileName + ".boil/";
+                project = dialogue.FileName + ".boil\\";
 
                 if (!Directory.Exists(project))
                     Directory.CreateDirectory(project);

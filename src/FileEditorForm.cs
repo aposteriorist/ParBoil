@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -17,28 +18,39 @@ namespace ParBoil
 {
     public partial class FileEditorForm : Form
     {
-        public FileEditorForm(string path, Node node)
+        public FileEditorForm(string project, Node node)
         {
             InitializeComponent();
-
-            this.path = path;
 
             file = node.GetFormatAs<RGGFormat>();
             Text += node.Name;
             name = node.Name;
 
-            file.Load();
+            path = project + node.Path[1..];
+
+            //if (WorkingEnvironmentExists())
+            //{
+            //    // Load from JSON
+            //    // file.Load(current);
+            //}
+            //else
+            //{
+                file.Load();
+                CreateWorkingEnvironment();
+            //}
 
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, Mincho);
             Controls.Clear();
             Controls.Add(file.Handle);
 
-            FileToJSON();
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            
 
             Refresh();
         }
 
-        private string path; // Ends with '/'
+        private string path;
         private string name;
         private RGGFormat file;
 
@@ -58,10 +70,22 @@ namespace ParBoil
                 e.Cancel = true;
         }
 
-        private void FileToJSON()
+        private void FileToJSON(string jsoname)
         {
-            //File.WriteAllText($"{name}.json", file.ToJSONString(), Encoding.UTF8);
-            File.WriteAllBytes($"{path}{name}.json", file.ToJSON());
+            if (!File.Exists(jsoname))
+                File.WriteAllBytes($"{path}\\{jsoname}.json", file.ToJSON());
+        }
+
+        private void CreateWorkingEnvironment()
+        {
+            FileToJSON("orig");
+            //FileToJSON("current");
+            File.Copy($"{path}\\orig.json", $"{path}\\current.json");
+        }
+
+        private bool WorkingEnvironmentExists()
+        {
+            return File.Exists($"{path}\\orig.json") && File.Exists($"{path}\\current.json");
         }
     }
 }
