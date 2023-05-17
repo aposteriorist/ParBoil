@@ -88,12 +88,12 @@ namespace ParBoil.RGGFormats
             return new MSGFormat(source.Stream, 0, source.Stream.Length);
         }
 
-        private void FromJSON()
+        public override void LoadFromJSON(DataStream json)
         {
-
+            LoadFromBin();
         }
 
-        public override void Load(DataStream? json = null)
+        public override void LoadFromBin()
         { 
             var reader = new DataReader(Stream) {
                 DefaultEncoding = Encoding.GetEncoding(932),

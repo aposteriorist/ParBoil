@@ -26,7 +26,8 @@ namespace ParBoil.RGGFormats
         internal abstract Control Handle { get; set; }
         public abstract uint EditCount { get; set; }
 
-        public abstract void Load(DataStream? json = null);
+        public abstract void LoadFromBin();
+        public abstract void LoadFromJSON(DataStream json);
         public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
 
         public abstract void ResizeAll(Size size);

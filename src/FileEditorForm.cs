@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Yarhl.FileSystem;
+using Yarhl.IO;
 
 namespace ParBoil
 {
@@ -28,16 +29,15 @@ namespace ParBoil
 
             path = project + node.Path[1..];
 
-            //if (WorkingEnvironmentExists())
-            //{
-            //    // Load from JSON
-            //    // file.Load(current);
-            //}
-            //else
-            //{
-                file.Load();
+            if (WorkingEnvironmentExists())
+            {
+                LoadWorkingEnvironment();
+            }
+            else
+            {
+                file.LoadFromBin();
                 CreateWorkingEnvironment();
-            //}
+            }
 
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, Mincho);
             Controls.Clear();
@@ -74,6 +74,13 @@ namespace ParBoil
         {
             if (!File.Exists(jsoname))
                 File.WriteAllBytes($"{path}\\{jsoname}.json", file.ToJSON());
+        }
+
+        private void LoadWorkingEnvironment()
+        {
+            using var json = DataStreamFactory.FromFile(path, FileOpenMode.Read);
+
+            file.LoadFromJSON(json);
         }
 
         private void CreateWorkingEnvironment()
