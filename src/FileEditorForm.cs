@@ -81,7 +81,7 @@ namespace ParBoil
                     count++;
 
             File.Move("current.json", String.Format("ver{0:D4}.json", count), false);
-            FileToJSON("current");
+            WriteFileAsJSON("current.json");
 
             // We should also copy the MSG fields back into the stream, then get that stream back into the node.
             // Assuming that doesn't already occur when we edit the file's stream, but I don't think it will.
@@ -92,10 +92,10 @@ namespace ParBoil
             Directory.SetCurrentDirectory(project);
         }
 
-        private void FileToJSON(string jsoname)
+        private void WriteFileAsJSON(string jsoname)
         {
-            if (!File.Exists($"{jsoname}.json"))
-                file.ToJSONStream().WriteTo($"{jsoname}.json");
+            if (!File.Exists(jsoname))
+                file.ToJSONStream().WriteTo(jsoname);
 
         }
 
@@ -108,8 +108,7 @@ namespace ParBoil
 
         private void CreateWorkingEnvironment()
         {
-            FileToJSON("orig");
-            //FileToJSON("current");
+            WriteFileAsJSON("orig.json");
             File.Copy("orig.json", "current.json");
         }
 
