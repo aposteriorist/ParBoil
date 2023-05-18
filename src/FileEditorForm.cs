@@ -38,7 +38,7 @@ namespace ParBoil
                 file.LoadFromBin();
                 CreateWorkingEnvironment();
             }
-
+            
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, Mincho);
             Controls.Clear();
             Controls.Add(file.Handle);
@@ -73,12 +73,13 @@ namespace ParBoil
         private void FileToJSON(string jsoname)
         {
             if (!File.Exists(jsoname))
-                File.WriteAllBytes($"{path}\\{jsoname}.json", file.ToJSON());
+                file.ToJSONStream().WriteTo($"{path}\\{jsoname}.json");
+                //File.WriteAllBytes($"{path}\\{jsoname}.json", file.ToJSON());
         }
 
         private void LoadWorkingEnvironment()
         {
-            using var json = DataStreamFactory.FromFile(path, FileOpenMode.Read);
+            using var json = DataStreamFactory.FromFile($"{path}\\current.json", FileOpenMode.Read);
 
             file.LoadFromJSON(json);
         }

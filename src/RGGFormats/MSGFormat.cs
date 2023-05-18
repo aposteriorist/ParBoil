@@ -1,6 +1,9 @@
 ﻿using ParLibrary;
+using System;
 using System.Composition;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -17,8 +20,8 @@ namespace ParBoil.RGGFormats
         public MSGFormat(DataStream stream) : base(stream) { }
         public MSGFormat(DataStream stream, long offset, long length) : base(stream, offset, length) { }
 
-        public Section[] sections { get; set; }
-        public MiscEntry[] misc { get; set; }
+        public Section[] Sections { get; set; }
+        public MiscEntry[] Misc { get; set; }
         public Event[] events { get; set; }
         internal override Control Handle { get; set; }
         public override uint EditCount { get; set; }
@@ -88,13 +91,8 @@ namespace ParBoil.RGGFormats
             return new MSGFormat(source.Stream, 0, source.Stream.Length);
         }
 
-        public override void LoadFromJSON(DataStream json)
-        {
-            LoadFromBin();
-        }
-
         public override void LoadFromBin()
-        { 
+        {
             var reader = new DataReader(Stream) {
                 DefaultEncoding = Encoding.GetEncoding(932),
                 Endianness = EndiannessMode.BigEndian,
@@ -106,7 +104,7 @@ namespace ParBoil.RGGFormats
             int misc_ptr = reader.ReadInt32();
             short miscount = reader.ReadInt16();
 
-            misc = new MiscEntry[miscount];
+            Misc = new MiscEntry[miscount];
             reader.Stream.Seek(misc_ptr);
             for (int e = 0; e < miscount; e++)
             {
@@ -117,14 +115,14 @@ namespace ParBoil.RGGFormats
                 entry.Import = entry.Export;
                 reader.Stream.PopPosition();
 
-                misc[e] = entry;
+                Misc[e] = entry;
             }
 
             reader.Stream.Seek(table_ptr);
             uint table = reader.ReadUInt32();
             ushort chairs = reader.ReadUInt16();
 
-            sections = new Section[chairs];
+            Sections = new Section[chairs];
             reader.Stream.Seek(table + 6);
             for (int s = 0; s < chairs; s++)
             {
@@ -186,7 +184,7 @@ namespace ParBoil.RGGFormats
                         message.Export = reader.ReadString();
                         message.Import = message.Export;
                         message.SpeakerIndex = message._functions[0].Args[3];
-                        if (message.SpeakerIndex >= misc.Length)
+                        if (message.SpeakerIndex >= Misc.Length)
                             message.SpeakerIndex = -1;
 
                         header.Messages[m] = message;
@@ -200,11 +198,55 @@ namespace ParBoil.RGGFormats
                     reader.Stream.Position += 10;
                 }
 
-                sections[s] = section;
+                Sections[s] = section;
 
                 reader.Stream.PopPosition();
                 reader.Stream.Position += 6;
             }
+        }
+
+        public override void LoadFromJSON(DataStream jsonStream)
+        {
+            byte[] json = new byte[jsonStream.Length];
+            jsonStream.Read(json, 0, (int)jsonStream.Length);
+
+            var opts = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            };
+
+            MSGFormat msg = JsonSerializer.Deserialize<MSGFormat>(json, opts);
+            Misc = msg.Misc;
+            Sections = msg.Sections;
+            
+            // Parse the function table strings.
+            for (int s = 0; s < Sections.Length; s++)
+                for (int h = 0; h < Sections[s].HeaderCount; h++)
+                    for (int m = 0;  m < Sections[s].Headers[h].MessageCount; m++)
+                    {
+                        var message = Sections[s].Headers[h].Messages[m];
+                        message._functions = new Function[message.FunctionCount];
+
+                        for (int f = 0; f < message.FunctionCount; f++)
+                        {
+                            var fstr = message.Functions[f];
+                            var _args = fstr[7..^1].Split(',');
+
+                            message._functions[f] = new Function()
+                            {
+                                Type = byte.Parse(fstr[0..2], NumberStyles.AllowHexSpecifier),
+                                Subtype = byte.Parse(fstr[3..5], NumberStyles.AllowHexSpecifier),
+                                Args = new short[9],
+                            };
+
+                            for (int a = 0; a < 9; a++)
+                                message._functions[f].Args[a] = System.Convert.ToInt16(_args[a]);
+                        }
+
+                        Sections[s].Headers[h].Messages[m] = message;
+                    }
         }
 
         public override string ToJSONString()
@@ -215,10 +257,11 @@ namespace ParBoil.RGGFormats
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
-            return JsonSerializer.Serialize(new object[2] { misc, sections }, opts);
+            //return JsonSerializer.Serialize(new object[2] { misc, sections }, opts);
+            return JsonSerializer.Serialize(this, opts);
         }
 
-        public override byte[] ToJSON()
+        public override DataStream ToJSONStream()
         {
             var opts = new JsonSerializerOptions()
             {
@@ -226,16 +269,11 @@ namespace ParBoil.RGGFormats
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
-            return JsonSerializer.SerializeToUtf8Bytes(new object[2] { misc, sections }, opts);
+            //byte[] json = JsonSerializer.SerializeToUtf8Bytes(new object[2] { misc, sections }, opts);
+            byte[] json = JsonSerializer.SerializeToUtf8Bytes(this, opts);
+            return DataStreamFactory.FromArray(json, 0, json.Length);
         }
 
-        public void gimme()
-        {
-            foreach (var s in sections)
-                foreach (var h in s.Headers)
-                    foreach (var m in h.Messages)
-                        Debug.WriteLine(m.Export);
-        }
 
         private MiscEntry[] buffer_misc;
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
@@ -243,8 +281,8 @@ namespace ParBoil.RGGFormats
             //binToJSON();
             if (buffer_misc == null)
             {
-                buffer_misc = new MiscEntry[misc.Length];
-                misc.CopyTo(buffer_misc, 0);
+                buffer_misc = new MiscEntry[Misc.Length];
+                Misc.CopyTo(buffer_misc, 0);
             }
 
             // Tabs are ugly. Could I do this custom with menu strips or buttons?
@@ -275,7 +313,7 @@ namespace ParBoil.RGGFormats
                 Margin = new Padding(0),
             };
 
-            for (int m = 0; m < misc.Length; m++)
+            for (int m = 0; m < Misc.Length; m++)
             {
                 var panel = new FlowLayoutPanel()
                 {
@@ -295,7 +333,7 @@ namespace ParBoil.RGGFormats
                     BackColor = panel.BackColor,
                     ForeColor = formForeColor,
                     Font = formFont,
-                    Text = misc[m].Export,
+                    Text = Misc[m].Export,
                     ReadOnly = true,
                     Margin = new Padding(30,0,15,0),
                     Tag = m,
@@ -308,13 +346,13 @@ namespace ParBoil.RGGFormats
                     BackColor = formEditableColor,
                     ForeColor = formForeColor,
                     Font = formFont,
-                    Text = misc[m].Import,
+                    Text = Misc[m].Import,
                     Margin = new Padding(15,0,3,0),
                     Tag = m,             
                 };
                 import.LostFocus += delegate
                 {
-                    panel.Tag = misc[(int)import.Tag].Export == import.Text;
+                    panel.Tag = Misc[(int)import.Tag].Export == import.Text;
                     UpdateSpeaker((int)import.Tag, import.Text);
                 };
 
@@ -329,7 +367,7 @@ namespace ParBoil.RGGFormats
 
             // Populate sections and headers
             uint s = 0;
-            foreach (var section in sections)
+            foreach (var section in Sections)
             {
                 TabPage sectionTab = new TabPage()
                 {
@@ -410,7 +448,7 @@ namespace ParBoil.RGGFormats
                                 ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
-                                Text = misc[header.Messages[i].SpeakerIndex].Export,
+                                Text = Misc[header.Messages[i].SpeakerIndex].Export,
                                 ReadOnly = true,
                                 // Margin = new Padding(0, 0, exportPanel.Width, 3);
                                 Tag = header.Messages[i].SpeakerIndex,
@@ -425,7 +463,7 @@ namespace ParBoil.RGGFormats
                                 ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
-                                Text = misc[header.Messages[i].SpeakerIndex].Import,
+                                Text = Misc[header.Messages[i].SpeakerIndex].Import,
                                 ReadOnly = true,
                                 // Margin = new Padding(0, 0, importPanel.Width, 3),
                                 Tag = header.Messages[i].SpeakerIndex,
