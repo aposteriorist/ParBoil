@@ -59,6 +59,9 @@ namespace ParBoil
         private string name;
         private RGGFormat file;
 
+        private string original = "orig.json";
+        private string current  = "current.json";
+
         private Color EditableColor = Color.FromArgb(45, 45, 45);
 
         private Font Mincho = new Font("MS Mincho", 18, FontStyle.Regular);
@@ -80,8 +83,8 @@ namespace ParBoil
                 if (file[^12..].StartsWith("ver"))
                     count++;
 
-            File.Move("current.json", String.Format("ver{0:D4}.json", count), false);
-            WriteFileAsJSON("current.json");
+            File.Move(current, String.Format("ver{0:D4}.json", count), false);
+            WriteFileAsJSON(current);
 
             // We should also copy the MSG fields back into the stream, then get that stream back into the node.
             // Assuming that doesn't already occur when we edit the file's stream, but I don't think it will.
@@ -101,20 +104,20 @@ namespace ParBoil
 
         private void LoadWorkingEnvironment()
         {
-            using var json = DataStreamFactory.FromFile("current.json", FileOpenMode.Read);
+            using var json = DataStreamFactory.FromFile(current, FileOpenMode.Read);
 
             file.LoadFromJSON(json);
         }
 
         private void CreateWorkingEnvironment()
         {
-            WriteFileAsJSON("orig.json");
-            File.Copy("orig.json", "current.json");
+            WriteFileAsJSON(original);
+            File.Copy(original, current);
         }
 
         private bool WorkingEnvironmentExists()
         {
-            return File.Exists("orig.json") && File.Exists("current.json");
+            return File.Exists(original) && File.Exists(current);
         }
 
         private void FileEditorForm_Activated(object sender, EventArgs e)
