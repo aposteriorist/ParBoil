@@ -27,7 +27,15 @@ namespace ParBoil
             Text += node.Name;
             name = node.Name;
 
+            this.project = project;
+
             path = project + node.Path[1..];
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+            Directory.SetCurrentDirectory(path);
+
 
             if (WorkingEnvironmentExists())
             {
@@ -38,18 +46,15 @@ namespace ParBoil
                 file.LoadFromBin();
                 CreateWorkingEnvironment();
             }
-            
+
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, Mincho);
             Controls.Clear();
             Controls.Add(file.Handle);
 
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            
-
             Refresh();
         }
 
+        private string project;
         private string path;
         private string name;
         private RGGFormat file;
@@ -68,18 +73,35 @@ namespace ParBoil
         {
             if (file.EditCount > 0 && MessageBox.Show("", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
                 e.Cancel = true;
+
+            uint count = 1;
+            // Write to the JSON on close. For now, make it version files automatically.
+            foreach (string file in Directory.GetFiles(path))
+                if (file[^12..].StartsWith("ver"))
+                    count++;
+
+            File.Move("current.json", String.Format("ver{0:D4}.json", count), false);
+            FileToJSON("current");
+
+            // We should also copy the MSG fields back into the stream, then get that stream back into the node.
+            // Assuming that doesn't already occur when we edit the file's stream, but I don't think it will.
+
+            // When that's done, generate a makeshift dropdown version selector. Just put it on a little generated form, for now.
+            // The generated form should move when the editor moves, and close when it closes.
+
+            Directory.SetCurrentDirectory(project);
         }
 
         private void FileToJSON(string jsoname)
         {
-            if (!File.Exists(jsoname))
-                file.ToJSONStream().WriteTo($"{path}\\{jsoname}.json");
-                //File.WriteAllBytes($"{path}\\{jsoname}.json", file.ToJSON());
+            if (!File.Exists($"{jsoname}.json"))
+                file.ToJSONStream().WriteTo($"{jsoname}.json");
+
         }
 
         private void LoadWorkingEnvironment()
         {
-            using var json = DataStreamFactory.FromFile($"{path}\\current.json", FileOpenMode.Read);
+            using var json = DataStreamFactory.FromFile("current.json", FileOpenMode.Read);
 
             file.LoadFromJSON(json);
         }
@@ -88,12 +110,17 @@ namespace ParBoil
         {
             FileToJSON("orig");
             //FileToJSON("current");
-            File.Copy($"{path}\\orig.json", $"{path}\\current.json");
+            File.Copy("orig.json", "current.json");
         }
 
         private bool WorkingEnvironmentExists()
         {
-            return File.Exists($"{path}\\orig.json") && File.Exists($"{path}\\current.json");
+            return File.Exists("orig.json") && File.Exists("current.json");
+        }
+
+        private void FileEditorForm_Activated(object sender, EventArgs e)
+        {
+            Directory.SetCurrentDirectory(path);
         }
     }
 }

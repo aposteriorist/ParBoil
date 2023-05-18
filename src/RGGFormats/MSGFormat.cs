@@ -60,7 +60,7 @@ namespace ParBoil.RGGFormats
             public uint FunctionTable;
             internal Function[] _functions;
             public string[] Functions;
-            internal int SpeakerIndex;
+            public int SpeakerIndex;
             public string Export;
             public string Import;
         }
@@ -274,17 +274,8 @@ namespace ParBoil.RGGFormats
             return DataStreamFactory.FromArray(json, 0, json.Length);
         }
 
-
-        private MiscEntry[] buffer_misc;
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
         {
-            //binToJSON();
-            if (buffer_misc == null)
-            {
-                buffer_misc = new MiscEntry[Misc.Length];
-                Misc.CopyTo(buffer_misc, 0);
-            }
-
             // Tabs are ugly. Could I do this custom with menu strips or buttons?
             // I already have one panel per tab, all I should need to do is attach that panel to a generated button,
             // which puts its associated panel centre-stage when it's pressed.
@@ -593,7 +584,7 @@ namespace ParBoil.RGGFormats
 
         private void UpdateSpeaker (int entry, string import)
         {
-            if (buffer_misc[entry].Import == import)
+            if (Misc[entry].Import == import)
                 return;
 
             var topTabs = (TabControl)Handle;
@@ -620,7 +611,7 @@ namespace ParBoil.RGGFormats
                 }
             }
 
-            buffer_misc[entry].Import = import;
+            Misc[entry].Import = import;
         }
 
         // TO-DO: private void UpdateText

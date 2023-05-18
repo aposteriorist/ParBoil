@@ -81,6 +81,8 @@ namespace ParBoil
                 treeViewPar.Nodes[0].EnsureVisible();
                 treeViewPar.EndUpdate();
             }
+
+            Directory.SetCurrentDirectory(project);
         }
 
         private void tSMI_openPAR_Click(object sender, EventArgs e)
@@ -128,20 +130,19 @@ namespace ParBoil
 
             if (file == null || file.IsContainer) return;
 
-
             if (file.Format is ParFile)
             {
                 if (file.GetFormatAs<ParFile>().IsCompressed)
                     file.TransformWith<Decompressor>();
                 TransformToFileTypeFormat(file);
-            }            
+            }
 
-            switch(file.Format)
+            switch (file.Format)
             {
                 case MSGFormat:
                     OpenInFileEditor(file);
                     break;
-            }            
+            }
         }
 
         private void TransformToFileTypeFormat (Node file)

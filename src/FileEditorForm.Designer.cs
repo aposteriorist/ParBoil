@@ -55,6 +55,8 @@
             Name = "FileEditorForm";
             ShowIcon = false;
             Text = "File Editor -- ";
+            Activated += FileEditorForm_Activated;
+            FormClosing += FileEditorForm_FormClosing;
             Resize += FileEditorForm_Resize;
             ResumeLayout(false);
         }
