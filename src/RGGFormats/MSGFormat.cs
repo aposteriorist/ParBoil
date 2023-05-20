@@ -24,7 +24,7 @@ namespace ParBoil.RGGFormats
         public MiscEntry[] Misc { get; set; }
         public Event[] events { get; set; }
         internal override Control Handle { get; set; }
-        public override uint EditCount { get; set; }
+        internal override List<Control> EditedControls { get; set; }
 
         public struct MiscEntry
         {
@@ -69,16 +69,17 @@ namespace ParBoil.RGGFormats
             public byte Type;
             public byte Subtype;
             public short[] Args;
+            public string Tag;
         }
 
         public struct Event
         {
-            string Type;
-            int Index;
-            string TagType;
-            uint TagLength;
-            uint[] RGBA;
-            string SignID;
+            public string Type;
+            public short Index;
+            public string TagType;
+            public short TagLength;
+            public byte[] ARGB;
+            public string SignID;
         }
 
         public MSGFormat Convert(ParFile source)
@@ -172,6 +173,14 @@ namespace ParBoil.RGGFormats
                             function.Args[7] = reader.ReadByte();
                             function.Args[8] = reader.ReadByte();
 
+                            if (function.Type == 2)
+                            {
+                                if (function.Subtype == 7) function.Tag = $"<Color:{function.Args[6]},{function.Args[7]},{function.Args[8]},{function.Args[5]}>";
+                                else if (function.Subtype == 8) function.Tag = "<Color:Default>";
+                            }
+                            else
+                                function.Tag = "";
+
                             message.Functions[f] = String.Format("{0:X2} {1:X2} ({2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
                                 function.Type, function.Subtype, function.Args[0], function.Args[1],
                                 function.Args[2], function.Args[3], function.Args[4], function.Args[5],
@@ -234,15 +243,24 @@ namespace ParBoil.RGGFormats
                             var fstr = message.Functions[f];
                             var _args = fstr[7..^1].Split(',');
 
-                            message._functions[f] = new Function()
+                            var function = new Function()
                             {
                                 Type = byte.Parse(fstr[0..2], NumberStyles.AllowHexSpecifier),
                                 Subtype = byte.Parse(fstr[3..5], NumberStyles.AllowHexSpecifier),
                                 Args = new short[9],
+                                Tag = "",
                             };
 
                             for (int a = 0; a < 9; a++)
-                                message._functions[f].Args[a] = System.Convert.ToInt16(_args[a]);
+                                function.Args[a] = System.Convert.ToInt16(_args[a]);
+
+                            if (function.Type == 2)
+                            {
+                                if (function.Subtype == 7) function.Tag = $"<Color:{function.Args[6]},{function.Args[7]},{function.Args[8]},{function.Args[5]}>";
+                                else if (function.Subtype == 8) function.Tag = "<Color:Default>";
+                            }
+
+                            message._functions[f] = function;
                         }
 
                         Sections[s].Headers[h].Messages[m] = message;
@@ -314,37 +332,46 @@ namespace ParBoil.RGGFormats
                     BackColor = formBackColor,
                     AutoScroll = true,
                     Margin = new Padding(0, 20, 0, 0),
-                    Tag = false,
                 };
 
-                var export = new TextBox()
+                var export = new RichTextBox()
                 {
-                    Width = 200,
-                    Height = 30,
+                    Width = 300,
+                    Height = 40,
                     BackColor = panel.BackColor,
                     ForeColor = formForeColor,
                     Font = formFont,
                     Text = Misc[m].Export,
+                    Multiline = false,
                     ReadOnly = true,
                     Margin = new Padding(30,0,15,0),
                     Tag = m,
                 };
 
-                var import = new TextBox()
+                var import = new RichTextBox()
                 {
-                    Width = 200,
-                    Height = 30,
+                    Width = 300,
+                    Height = 40,
                     BackColor = formEditableColor,
                     ForeColor = formForeColor,
                     Font = formFont,
                     Text = Misc[m].Import,
+                    Multiline = false,
                     Margin = new Padding(15,0,3,0),
                     Tag = m,             
                 };
                 import.LostFocus += delegate
                 {
-                    panel.Tag = Misc[(int)import.Tag].Export == import.Text;
+                    if (import.CanUndo)
+                    {
+                        if (!EditedControls.Contains(import)) EditedControls.Add(import);
+                    }
+                    else
+                    {
+                        if (EditedControls.Contains(import)) EditedControls.Remove(import);
+                    }
                     UpdateSpeaker((int)import.Tag, import.Text);
+                    Debug.WriteLine($"Number of edits: {EditedControls.Count}");
                 };
 
                 panel.Controls.Add(export);
@@ -374,7 +401,7 @@ namespace ParBoil.RGGFormats
                     //Appearance = TabAppearance.Buttons,
                 };
 
-                for (int h = 0; h < section.Headers.Length; h++)
+                for (uint h = 0; h < section.Headers.Length; h++)
                 {
                     var header = section.Headers[h];
 
@@ -397,8 +424,10 @@ namespace ParBoil.RGGFormats
                     mp.Margin = new Padding(0);
                     //mp.Dock = DockStyle.Fill;
 
-                    for (int i = 0; i < header.MessageCount; i++)
+                    for (uint m = 0; m < header.MessageCount; m++)
                     {
+                        var message = header.Messages[m];
+
                         var panel = new FlowLayoutPanel()
                         {
                             Width = mp.Width - 60,
@@ -406,11 +435,12 @@ namespace ParBoil.RGGFormats
                             //BackColor = Color.FromArgb(65, 65, 65),
                             BackColor = formBackColor,
                             //AutoScroll = true,
+                            Tag = m,
                         };
 
                         var label = new Label()
                         {
-                            Text = $"Message {i + 1}:    ",
+                            Text = $"Message {m + 1}:    ",
                             Margin = new Padding(0, 0, panel.Width, 3),
                         };
                         panel.Controls.Add(label);
@@ -429,7 +459,7 @@ namespace ParBoil.RGGFormats
                             Margin = new Padding(0, 0, 0, 0),
                         };
 
-                        if (header.Messages[i].SpeakerIndex >= 0)
+                        if (message.SpeakerIndex >= 0)
                         {
                             var speakerExport = new TextBox()
                             {
@@ -439,10 +469,10 @@ namespace ParBoil.RGGFormats
                                 ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
-                                Text = Misc[header.Messages[i].SpeakerIndex].Export,
+                                Text = Misc[message.SpeakerIndex].Export,
                                 ReadOnly = true,
                                 // Margin = new Padding(0, 0, exportPanel.Width, 3);
-                                Tag = header.Messages[i].SpeakerIndex,
+                                Tag = message.SpeakerIndex,
                             };
                             exportPanel.Controls.Add(speakerExport);
 
@@ -454,10 +484,10 @@ namespace ParBoil.RGGFormats
                                 ForeColor = formForeColor,
                                 Font = formFont,
                                 BorderStyle = BorderStyle.None,
-                                Text = Misc[header.Messages[i].SpeakerIndex].Import,
+                                Text = Misc[message.SpeakerIndex].Import,
                                 ReadOnly = true,
                                 // Margin = new Padding(0, 0, importPanel.Width, 3),
-                                Tag = header.Messages[i].SpeakerIndex,
+                                Tag = message.SpeakerIndex,
                             };
                             importPanel.Controls.Add(speakerImport);
                         }
@@ -476,8 +506,9 @@ namespace ParBoil.RGGFormats
                             ForeColor = formForeColor,
                             Font = formFont,
                             ReadOnly = true,
+                            Tag = m,
                         };
-                        InitializeText(textExport, header.Messages[i], false);
+                        InitializeText(textExport, message, false);
                         exportPanel.Controls.Add(textExport);
 
                         var textImport = new RichTextBox()
@@ -487,9 +518,22 @@ namespace ParBoil.RGGFormats
                             BackColor = formEditableColor,
                             ForeColor = formForeColor,
                             Font = formFont,
+                            Tag = (s, h, m),
                         };
-                        InitializeText(textImport, header.Messages[i], true);
-                        if (textImport.Text == "") textImport.ReadOnly = true;
+                        InitializeText(textImport, message, true);
+                        if (textExport.Text == "") textImport.ReadOnly = true;
+                        textImport.LostFocus += delegate
+                        {
+                            if (textImport.CanUndo)
+                            {
+                                if (!EditedControls.Contains(textImport)) EditedControls.Add(textImport);
+                            }
+                            else
+                            {
+                                if (EditedControls.Contains(textImport)) EditedControls.Remove(textImport);
+                            }
+                            Debug.WriteLine($"Number of edits: {EditedControls.Count}");
+                        };
                         importPanel.Controls.Add(textImport);
 
                         panel.Controls.Add(exportPanel);
@@ -500,7 +544,6 @@ namespace ParBoil.RGGFormats
                     }
 
                     tabs.TabPages.Add(headerTab);
-
                 }
 
                 tabs.SelectedIndexChanged += delegate { Resize(); };
@@ -614,8 +657,26 @@ namespace ParBoil.RGGFormats
             Misc[entry].Import = import;
         }
 
-        // TO-DO: private void UpdateText
-        //  When the text changes in the textbox, update the function table as a separate function.
+        private Message RemoveColorTags(Message msg)
+        {
+            foreach (var func in msg._functions)
+                if (func.Type == 2)
+                    if (func.Subtype == 7 || func.Subtype == 8)
+                        msg.Import = msg.Import.Replace(func.Tag, "");
+            return msg;
+        }
+
+        private void AddColorTags(ref Message msg)
+        {
+            int ignored = 0;
+            foreach (var func in msg._functions)
+                if (func.Type == 2)
+                    if (func.Subtype == 7 || func.Subtype == 8)
+                    {
+                        msg.Import = msg.Import.Insert(func.Args[2] + ignored, func.Tag);
+                        ignored += func.Args[4];
+                    }
+        }
 
         private void InitializeText(RichTextBox box, Message msg, bool import)
         {
@@ -656,6 +717,172 @@ namespace ParBoil.RGGFormats
 
             if (box.TextLength + ignored + crlf < msg.Export.Length)
                 box.AppendText(text[(box.TextLength + ignored + crlf)..]);
+
+            while (box.CanUndo)
+                box.ClearUndo();
+        }
+
+        /*
+         TO-DO: The program doesn't handle exports correctly on JSON loads,
+         because the functions that are output to JSON are only relative to the import.
+
+         Redo the above function so that, as it goes through the text,
+         it chooses when to colour / uncolour text based on Color tags,
+         and it removes the tags as it goes through. This function will supplant
+         the currently unused function RemoveColorTags.
+
+         Then make a second function that adds Color tags back into the string
+         based on where color exists in the RTB Text, as currently goes on in UpdateMessage.
+         (Unedited textboxes won't need to do this, because their Export and Import strings
+          will still have Color tags in the appropriate places. This function will only need to
+          be called on close, and only for textboxes that are in EditedControls.)
+
+         Finally, have UpdateMessage use the position of the newly-added Color tags to determine
+         how it should update the functions.
+        */
+
+        public override void FormClosing()
+        {
+            foreach (RichTextBox box in EditedControls)
+            {
+                if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
+                    UpdateMessage(box, s, h, m);
+            }
+        }
+
+        private void UpdateMessage(RichTextBox box, uint s, uint h, uint m)
+        {
+            if (box.CanUndo)
+            {
+                var msg = Sections[s].Headers[h].Messages[m];
+
+                var funcs = new List<Function>();
+                bool textHandled = false;
+                foreach (var func in Sections[s].Headers[h].Messages[m]._functions)
+                {
+                    if (func.Type != 2)
+                    {
+                        if (func.Type == 1)
+                        {
+                            func.Args[2] = (short)box.TextLength;
+                        }
+                        funcs.Add(func);
+                    }
+
+                    else if (func.Subtype == 0xb || func.Subtype == 0xc || func.Subtype == 0x13) // Intentionally ignoring 020e (JIS parens function)
+                        funcs.Add(func);
+
+                    else if (!textHandled)
+                    {
+                        // Go through char-by-char and update functions as done in msgtool.
+                        short charCount = 0;
+                        box.SelectionStart = 0;
+                        box.SelectionLength = 1;
+                        bool openColorTag = false;
+                        var newFunc = new Function() { Type = 2, Args = new short[9] };
+                        foreach (char ch in box.Text)
+                        {
+                            if (ch == '<')
+                            {
+                                newFunc.Subtype = 0xa;
+                                newFunc.Args[2] = charCount;
+                                charCount++;
+                            }
+
+                            else if (newFunc.Type == 0xa)
+                            {
+                                if (ch == '>')
+                                {
+                                    newFunc.Tag = box.Text[newFunc.Args[2]..(box.SelectionStart + 1)];
+                                    short.TryParse(newFunc.Tag[6..^1], out newFunc.Args[3]);
+                                    newFunc.Args[4] = (short)newFunc.Tag.Length;
+                                    funcs.Add(newFunc);
+                                    newFunc = new Function() { Type = 2, Args = new short[9] };
+                                }
+                            }
+
+                            else if (ch != '\r')
+                            {
+                                if (!openColorTag && box.SelectionColor != box.ForeColor)
+                                {
+                                    openColorTag = true;
+                                    Color c = box.SelectionColor;
+                                    newFunc.Subtype = 7;
+                                    newFunc.Args[2] = charCount;
+                                    newFunc.Tag = $"<Color:{c.R},{c.G},{c.B},{c.A}>";
+                                    Array.Copy(new byte[4] { c.A, c.R, c.G, c.B }, 0, newFunc.Args, 5, 4);
+                                    newFunc.Args[4] = (short)newFunc.Tag.Length;
+                                    funcs.Add(newFunc);
+                                    newFunc = new Function() { Type = 2, Args = new short[9] };
+                                }
+                                else if (openColorTag && box.SelectionColor == box.ForeColor)
+                                {
+                                    openColorTag = false;
+                                    newFunc.Subtype = 8;
+                                    newFunc.Tag = "<Color:Default>";
+                                    newFunc.Args[2] = charCount;
+                                    newFunc.Args[4] = (short)newFunc.Tag.Length;
+                                    funcs.Add(newFunc);
+                                    newFunc = new Function() { Type = 2, Args = new short[9] };
+                                }
+
+                                charCount++;
+
+                                if (ch == ',' || ch == '、')
+                                {
+                                    newFunc.Subtype = 1;
+                                    newFunc.Args[0] = 0xa;
+                                    newFunc.Args[2] = charCount;
+                                    newFunc.Tag = "";
+                                    funcs.Add(newFunc);
+                                    newFunc = new Function() { Type = 2, Args = new short[9] };
+                                }
+                                else if (ch == '.' || ch == '!' || ch == '?' || ch == '。' || ch == '！' || ch == '？')
+                                {
+                                    if (funcs.Count > 0 && funcs[^1].Subtype == 1 && funcs[^1].Args[2] == charCount - 1)
+                                    {
+                                        // Repeating Ender, e.g. "..."
+                                        newFunc = funcs[^1];
+                                        newFunc.Args[2]++;
+                                        funcs.RemoveAt(funcs.Count - 1);
+                                        funcs.Add(newFunc);
+                                        newFunc = new Function() { Type = 2, Args = new short[9] };
+                                    }
+                                    else
+                                    {
+                                        newFunc.Subtype = 1;
+                                        newFunc.Args[0] = 0x14;
+                                        newFunc.Args[2] = charCount;
+                                        newFunc.Tag = "";
+                                        funcs.Add(newFunc);
+                                        newFunc = new Function() { Type = 2, Args = new short[9] };
+                                    }
+                                }
+                            }
+
+                            box.SelectionStart++;
+                            box.SelectionLength = 1;
+                        }
+                        textHandled = true;
+                    }
+                }
+
+                msg._functions = funcs.ToArray();
+                msg.FunctionCount = (byte)funcs.Count;
+                msg.Import = box.Text;
+                AddColorTags(ref msg);
+
+                msg.Functions = new string[funcs.Count];
+
+                int f = 0;
+                foreach (var func in funcs)
+                    msg.Functions[f++] = String.Format("{0:X2} {1:X2} ({2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
+                                func.Type, func.Subtype, func.Args[0], func.Args[1],
+                                func.Args[2], func.Args[3], func.Args[4], func.Args[5],
+                                func.Args[6], func.Args[7], func.Args[8]);
+
+                Sections[s].Headers[h].Messages[m] = msg;
+            }
         }
 
         public void topTabs_GotFocus(object sender, EventArgs e)

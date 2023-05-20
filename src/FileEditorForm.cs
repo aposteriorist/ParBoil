@@ -74,23 +74,32 @@ namespace ParBoil
 
         private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (file.EditCount > 0 && MessageBox.Show("", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
-                e.Cancel = true;
+            if (file.EditedControls.Count > 0)
+            {
+                file.FormClosing();
 
-            uint count = 1;
-            // Write to the JSON on close. For now, make it version files automatically.
-            foreach (string file in Directory.GetFiles(path))
-                if (file[^12..].StartsWith("ver"))
-                    count++;
+                if (MessageBox.Show("There are unsaved changes." +
+                    "\n\n(For now, pressing OK will save changes to JSON.)", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                {
+                    e.Cancel = true;
+                    return;
+                }
 
-            File.Move(current, String.Format("ver{0:D4}.json", count), false);
-            WriteFileAsJSON(current);
+                uint count = 1;
+                // Write to the JSON on close. For now, make it version files automatically.
+                foreach (string file in Directory.GetFiles(path))
+                    if (file[^12..].StartsWith("ver"))
+                        count++;
 
-            // We should also copy the MSG fields back into the stream, then get that stream back into the node.
-            // Assuming that doesn't already occur when we edit the file's stream, but I don't think it will.
+                File.Move(current, String.Format("ver{0:D4}.json", count), false);
+                WriteFileAsJSON(current);
 
-            // When that's done, generate a makeshift dropdown version selector. Just put it on a little generated form, for now.
-            // The generated form should move when the editor moves, and close when it closes.
+                // We should also copy the MSG fields back into the stream, then get that stream back into the node.
+                // Assuming that doesn't already occur when we edit the file's stream, but I don't think it will.
+
+                // When that's done, generate a makeshift dropdown version selector. Just put it on a little generated form, for now.
+                // The generated form should move when the editor moves, and close when it closes.
+            }
 
             Directory.SetCurrentDirectory(project);
         }

@@ -12,19 +12,19 @@ namespace ParBoil.RGGFormats
     {
         public RGGFormat() : base()
         {
-            EditCount = 0;
+            EditedControls = new List<Control>();
         }
         public RGGFormat(DataStream stream) : base(stream)
         {
-            EditCount = 0;
+            EditedControls = new List<Control>();
         }
         public RGGFormat(DataStream stream, long offset, long length) : base(stream, offset, length)
         {
-            EditCount = 0;
+            EditedControls = new List<Control>();
         }
 
         internal abstract Control Handle { get; set; }
-        public abstract uint EditCount { get; set; }
+        internal abstract List<Control> EditedControls { get; set; }
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
@@ -37,5 +37,6 @@ namespace ParBoil.RGGFormats
 
         public abstract DataStream ToJSONStream();
         public abstract string ToJSONString();
+        public abstract void FormClosing();
     }
 }
