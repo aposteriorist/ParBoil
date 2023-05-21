@@ -680,66 +680,70 @@ namespace ParBoil.RGGFormats
 
         private void InitializeText(RichTextBox box, Message msg, bool import)
         {
+            box.Clear();
+            box.SelectionStart = 0;
+
             string text = import ? msg.Import : msg.Export;
 
             if (text == null || text.Length == 0) return;
 
-            int ignored = 0;
-            int crlf = 0;
-            int disc = 0;
-
-            foreach (var func in msg._functions)
+            // Note: Code assumes well-formed text in RGG style. But that's true throughout, really.
+            int i = 0, j = text.IndexOf("<Color:", i);
+            while (j != -1 && i < text.Length)
             {
-                if (func.Type == 2)
-                {
-                    switch (func.Subtype)
-                    {
-                        case 7:
-                            disc = text[(box.TextLength + ignored + crlf)..(func.Args[2] + ignored + crlf)].Count(f => f == '\r');
-                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.Args[2] + ignored + crlf + disc)]);
-                            ignored += func.Args[4];
-                            crlf += disc;
-                            box.SelectionColor = Color.FromArgb(func.Args[5], func.Args[6], func.Args[7], func.Args[8]);
-                            box.ScrollToCaret();
-                            break;
-                        case 8:
-                            // Assumption: CRLF will never be encountered as coloured text.
-                            //disc = text[(box.TextLength + ignored + crlf)..(func.args[2] + ignored + crlf)].Count(f => f == '\r');
-                            box.AppendText(text[(box.TextLength + ignored + crlf)..(func.Args[2] + ignored + crlf)]);
-                            box.SelectionColor = box.ForeColor;
-                            box.ScrollToCaret();
-                            //crlf += disc;
-                            ignored += func.Args[4];
-                            break;
-                    }
-                }
+                box.AppendText(text[i..j]);
+                i = text.IndexOf('>', j);
+                byte[] argb = text[(j+7)..i].Split(',').Select(s => byte.Parse(s)).ToArray();
+                box.SelectionColor = Color.FromArgb(argb[3], argb[0], argb[1], argb[2]);
+                box.ScrollToCaret();
+
+                j = text.IndexOf("<Color:", ++i);
+
+                box.AppendText(text[i..j]);
+                box.SelectionColor = box.ForeColor;
+                box.ScrollToCaret();
+
+                i = text.IndexOf('>', j) + 1;
+                j = text.IndexOf("<Color:", i);
             }
 
-            if (box.TextLength + ignored + crlf < msg.Export.Length)
-                box.AppendText(text[(box.TextLength + ignored + crlf)..]);
+            box.AppendText(text[i..]);
 
             while (box.CanUndo)
                 box.ClearUndo();
         }
 
-        /*
-         TO-DO: The program doesn't handle exports correctly on JSON loads,
-         because the functions that are output to JSON are only relative to the import.
+        // Logic inserted into UpdateMessage's loop, rather than calling the function directly.
+        private string WetToDry(RichTextBox box)
+        {
+            var goro = new StringBuilder();
 
-         Redo the above function so that, as it goes through the text,
-         it chooses when to colour / uncolour text based on Color tags,
-         and it removes the tags as it goes through. This function will supplant
-         the currently unused function RemoveColorTags.
+            box.SelectionStart = 0;
+            box.SelectionLength = 1;
+            bool openColorTag = false;
 
-         Then make a second function that adds Color tags back into the string
-         based on where color exists in the RTB Text, as currently goes on in UpdateMessage.
-         (Unedited textboxes won't need to do this, because their Export and Import strings
-          will still have Color tags in the appropriate places. This function will only need to
-          be called on close, and only for textboxes that are in EditedControls.)
+            foreach (char ch in box.Text)
+            {
+                if (!openColorTag && box.SelectionColor != box.ForeColor)
+                {
+                    Color c = box.SelectionColor;
+                    goro.Append($"<Color:{c.R},{c.G},{c.B},{c.A}>");
+                    openColorTag = true;
+                }
+                else if (openColorTag && box.SelectionColor == box.ForeColor)
+                {
+                    goro.Append("<Color:Default>");
+                    openColorTag = false;
+                }
 
-         Finally, have UpdateMessage use the position of the newly-added Color tags to determine
-         how it should update the functions.
-        */
+                goro.Append(ch);
+
+                box.SelectionStart++;
+                box.SelectionLength = 1;
+            }
+
+            return goro.ToString();
+        }
 
         public override void FormClosing()
         {
@@ -755,6 +759,7 @@ namespace ParBoil.RGGFormats
             if (box.CanUndo)
             {
                 var msg = Sections[s].Headers[h].Messages[m];
+                var goro = new StringBuilder();
 
                 var funcs = new List<Function>();
                 bool textHandled = false;
@@ -810,6 +815,7 @@ namespace ParBoil.RGGFormats
                                     newFunc.Subtype = 7;
                                     newFunc.Args[2] = charCount;
                                     newFunc.Tag = $"<Color:{c.R},{c.G},{c.B},{c.A}>";
+                                    goro.Append(newFunc.Tag);
                                     Array.Copy(new byte[4] { c.A, c.R, c.G, c.B }, 0, newFunc.Args, 5, 4);
                                     newFunc.Args[4] = (short)newFunc.Tag.Length;
                                     funcs.Add(newFunc);
@@ -820,6 +826,7 @@ namespace ParBoil.RGGFormats
                                     openColorTag = false;
                                     newFunc.Subtype = 8;
                                     newFunc.Tag = "<Color:Default>";
+                                    goro.Append(newFunc.Tag);
                                     newFunc.Args[2] = charCount;
                                     newFunc.Args[4] = (short)newFunc.Tag.Length;
                                     funcs.Add(newFunc);
@@ -860,6 +867,7 @@ namespace ParBoil.RGGFormats
                                 }
                             }
 
+                            goro.Append(ch);
                             box.SelectionStart++;
                             box.SelectionLength = 1;
                         }
@@ -869,8 +877,7 @@ namespace ParBoil.RGGFormats
 
                 msg._functions = funcs.ToArray();
                 msg.FunctionCount = (byte)funcs.Count;
-                msg.Import = box.Text;
-                AddColorTags(ref msg);
+                msg.Import = goro.ToString();
 
                 msg.Functions = new string[funcs.Count];
 
