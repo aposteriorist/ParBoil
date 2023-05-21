@@ -47,7 +47,7 @@ namespace ParBoil
                 CreateWorkingEnvironment();
             }
 
-            file.GenerateControls(Size, ForeColor, EditableColor, BackColor, Mincho);
+            file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
             Controls.Clear();
             Controls.Add(file.Handle);
 
@@ -59,16 +59,34 @@ namespace ParBoil
         private string name;
         private RGGFormat file;
 
-        private string current  = "current.json";
+        private string current = "current.json";
 
         private Color EditableColor = Color.FromArgb(45, 45, 45);
+        private Font EditorFont = new Font("MS Mincho", 18, FontStyle.Regular);
 
-        private Font Mincho = new Font("MS Mincho", 18, FontStyle.Regular);
 
-
-        private void FileEditorForm_Resize(object sender, EventArgs e)
+        private void WriteFileAsJSON(string jsoname)
         {
-            file.Resize();
+            if (!File.Exists(jsoname))
+                file.ToJSONStream().WriteTo(jsoname);
+        }
+
+
+        private void CreateWorkingEnvironment() => WriteFileAsJSON(current);
+
+        private void LoadWorkingEnvironment()
+        {
+            using var json = DataStreamFactory.FromFile(current, FileOpenMode.Read);
+
+            file.LoadFromJSON(json);
+        }
+
+        private bool WorkingEnvironmentExists() => File.Exists(current);
+
+
+        private void FileEditorForm_Activated(object sender, EventArgs e)
+        {
+            Directory.SetCurrentDirectory(path);
         }
 
         private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -104,26 +122,6 @@ namespace ParBoil
             Directory.SetCurrentDirectory(project);
         }
 
-        private void WriteFileAsJSON(string jsoname)
-        {
-            if (!File.Exists(jsoname))
-                file.ToJSONStream().WriteTo(jsoname);
-
-        }
-
-        private void LoadWorkingEnvironment()
-        {
-            using var json = DataStreamFactory.FromFile(current, FileOpenMode.Read);
-
-            file.LoadFromJSON(json);
-        }
-
-        private void CreateWorkingEnvironment() => WriteFileAsJSON(current);
-        private bool WorkingEnvironmentExists() => File.Exists(current);
-
-        private void FileEditorForm_Activated(object sender, EventArgs e)
-        {
-            Directory.SetCurrentDirectory(path);
-        }
+        private void FileEditorForm_Resize(object sender, EventArgs e) => file.Resize();
     }
 }
