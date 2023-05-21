@@ -268,6 +268,8 @@ namespace ParBoil.RGGFormats
 
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
         {
+            EditedControls = new List<Control>();
+
             // Tabs are ugly. Could I do this custom with menu strips or buttons?
             // I already have one panel per tab, all I should need to do is attach that panel to a generated button,
             // which puts its associated panel centre-stage when it's pressed.
@@ -609,14 +611,16 @@ namespace ParBoil.RGGFormats
             for (int s = 1; s < topTabs.TabCount; s++)
             {
                 var sectionTab = topTabs.TabPages[s];
-
                 var tabs = (TabControl)sectionTab.Controls[0];
+
                 foreach (TabPage headerTab in tabs.TabPages)
                 {
                     var mp = (FlowLayoutPanel)headerTab.Controls[0];
+
                     foreach (FlowLayoutPanel panel in mp.Controls)
                     {
                         var importPanel = (FlowLayoutPanel)panel.Controls[2];
+
                         if (importPanel.Controls.Count > 1)
                         {
                             var speakerImport = (TextBox)importPanel.Controls[0];
@@ -705,6 +709,8 @@ namespace ParBoil.RGGFormats
                 if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
                     UpdateMessage(box, s, h, m);
             }
+
+            EditedControls.Clear();
         }
 
         private void UpdateMessage(RichTextBox box, uint s, uint h, uint m)

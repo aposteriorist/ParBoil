@@ -76,14 +76,14 @@ namespace ParBoil
         {
             if (file.EditedControls.Count > 0)
             {
-                file.FormClosing();
-
                 if (MessageBox.Show("There are unsaved changes." +
                     "\n\n(For now, pressing OK will save changes to JSON.)", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
                 {
                     e.Cancel = true;
                     return;
                 }
+
+                file.FormClosing();
 
                 uint count = 1;
                 // Write to the JSON on close. For now, make it version files automatically.

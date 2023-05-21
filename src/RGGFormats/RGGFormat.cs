@@ -12,15 +12,15 @@ namespace ParBoil.RGGFormats
     {
         public RGGFormat() : base()
         {
-            EditedControls = new List<Control>();
+            //EditedControls = new List<Control>();
         }
         public RGGFormat(DataStream stream) : base(stream)
         {
-            EditedControls = new List<Control>();
+            //EditedControls = new List<Control>();
         }
         public RGGFormat(DataStream stream, long offset, long length) : base(stream, offset, length)
         {
-            EditedControls = new List<Control>();
+            //EditedControls = new List<Control>();
         }
 
         internal abstract Control Handle { get; set; }
