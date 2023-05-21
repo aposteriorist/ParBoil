@@ -1,4 +1,4 @@
-﻿using ParBoil.RGGFormats;
+using ParBoil.RGGFormats;
 using ParLibrary;
 using System;
 using System.Collections.Generic;
@@ -59,7 +59,6 @@ namespace ParBoil
         private string name;
         private RGGFormat file;
 
-        private string original = "orig.json";
         private string current  = "current.json";
 
         private Color EditableColor = Color.FromArgb(45, 45, 45);
@@ -74,6 +73,7 @@ namespace ParBoil
 
         private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            Focus(); // Take focus away from the currently-focused control to have its LostFocus event occur here.
             if (file.EditedControls.Count > 0)
             {
                 if (MessageBox.Show("There are unsaved changes." +
@@ -85,7 +85,7 @@ namespace ParBoil
 
                 file.FormClosing();
 
-                uint count = 1;
+                uint count = 0;
                 // Write to the JSON on close. For now, make it version files automatically.
                 foreach (string file in Directory.GetFiles(path))
                     if (file[^12..].StartsWith("ver"))
@@ -118,16 +118,8 @@ namespace ParBoil
             file.LoadFromJSON(json);
         }
 
-        private void CreateWorkingEnvironment()
-        {
-            WriteFileAsJSON(original);
-            File.Copy(original, current);
-        }
-
-        private bool WorkingEnvironmentExists()
-        {
-            return File.Exists(original) && File.Exists(current);
-        }
+        private void CreateWorkingEnvironment() => WriteFileAsJSON(current);
+        private bool WorkingEnvironmentExists() => File.Exists(current);
 
         private void FileEditorForm_Activated(object sender, EventArgs e)
         {
