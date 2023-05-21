@@ -20,11 +20,11 @@ namespace ParBoil.RGGFormats
         public MSGFormat(DataStream stream) : base(stream) { }
         public MSGFormat(DataStream stream, long offset, long length) : base(stream, offset, length) { }
 
-        public Section[] Sections { get; set; }
-        public MiscEntry[] Misc { get; set; }
-        public Event[] events { get; set; }
         internal override Control Handle { get; set; }
         internal override List<Control> EditedControls { get; set; }
+
+        public Section[] Sections { get; set; }
+        public MiscEntry[] Misc { get; set; }
 
         public struct MiscEntry
         {
@@ -69,17 +69,6 @@ namespace ParBoil.RGGFormats
             public byte Type;
             public byte Subtype;
             public short[] Args;
-            public string Tag;
-        }
-
-        public struct Event
-        {
-            public string Type;
-            public short Index;
-            public string TagType;
-            public short TagLength;
-            public byte[] ARGB;
-            public string SignID;
         }
 
         public MSGFormat Convert(ParFile source)
@@ -173,14 +162,6 @@ namespace ParBoil.RGGFormats
                             function.Args[7] = reader.ReadByte();
                             function.Args[8] = reader.ReadByte();
 
-                            if (function.Type == 2)
-                            {
-                                if (function.Subtype == 7) function.Tag = $"<Color:{function.Args[6]},{function.Args[7]},{function.Args[8]},{function.Args[5]}>";
-                                else if (function.Subtype == 8) function.Tag = "<Color:Default>";
-                            }
-                            else
-                                function.Tag = "";
-
                             message.Functions[f] = String.Format("{0:X2} {1:X2} ({2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
                                 function.Type, function.Subtype, function.Args[0], function.Args[1],
                                 function.Args[2], function.Args[3], function.Args[4], function.Args[5],
@@ -248,17 +229,10 @@ namespace ParBoil.RGGFormats
                                 Type = byte.Parse(fstr[0..2], NumberStyles.AllowHexSpecifier),
                                 Subtype = byte.Parse(fstr[3..5], NumberStyles.AllowHexSpecifier),
                                 Args = new short[9],
-                                Tag = "",
                             };
 
                             for (int a = 0; a < 9; a++)
                                 function.Args[a] = System.Convert.ToInt16(_args[a]);
-
-                            if (function.Type == 2)
-                            {
-                                if (function.Subtype == 7) function.Tag = $"<Color:{function.Args[6]},{function.Args[7]},{function.Args[8]},{function.Args[5]}>";
-                                else if (function.Subtype == 8) function.Tag = "<Color:Default>";
-                            }
 
                             message._functions[f] = function;
                         }
@@ -657,27 +631,6 @@ namespace ParBoil.RGGFormats
             Misc[entry].Import = import;
         }
 
-        private Message RemoveColorTags(Message msg)
-        {
-            foreach (var func in msg._functions)
-                if (func.Type == 2)
-                    if (func.Subtype == 7 || func.Subtype == 8)
-                        msg.Import = msg.Import.Replace(func.Tag, "");
-            return msg;
-        }
-
-        private void AddColorTags(ref Message msg)
-        {
-            int ignored = 0;
-            foreach (var func in msg._functions)
-                if (func.Type == 2)
-                    if (func.Subtype == 7 || func.Subtype == 8)
-                    {
-                        msg.Import = msg.Import.Insert(func.Args[2] + ignored, func.Tag);
-                        ignored += func.Args[4];
-                    }
-        }
-
         private void InitializeText(RichTextBox box, Message msg, bool import)
         {
             box.Clear();
@@ -798,9 +751,9 @@ namespace ParBoil.RGGFormats
                             {
                                 if (ch == '>')
                                 {
-                                    newFunc.Tag = box.Text[newFunc.Args[2]..(box.SelectionStart + 1)];
-                                    short.TryParse(newFunc.Tag[6..^1], out newFunc.Args[3]);
-                                    newFunc.Args[4] = (short)newFunc.Tag.Length;
+                                    string tag = box.Text[newFunc.Args[2]..(box.SelectionStart + 1)];
+                                    short.TryParse(tag[6..^1], out newFunc.Args[3]); // 0 for letters (e.g. Sign:D), for now
+                                    newFunc.Args[4] = (short)tag.Length;
                                     funcs.Add(newFunc);
                                     newFunc = new Function() { Type = 2, Args = new short[9] };
                                 }
@@ -813,11 +766,11 @@ namespace ParBoil.RGGFormats
                                     openColorTag = true;
                                     Color c = box.SelectionColor;
                                     newFunc.Subtype = 7;
+                                    string tag = $"<Color:{c.R},{c.G},{c.B},{c.A}>";
+                                    goro.Append(tag);
                                     newFunc.Args[2] = charCount;
-                                    newFunc.Tag = $"<Color:{c.R},{c.G},{c.B},{c.A}>";
-                                    goro.Append(newFunc.Tag);
+                                    newFunc.Args[4] = (short)tag.Length;
                                     Array.Copy(new byte[4] { c.A, c.R, c.G, c.B }, 0, newFunc.Args, 5, 4);
-                                    newFunc.Args[4] = (short)newFunc.Tag.Length;
                                     funcs.Add(newFunc);
                                     newFunc = new Function() { Type = 2, Args = new short[9] };
                                 }
@@ -825,10 +778,10 @@ namespace ParBoil.RGGFormats
                                 {
                                     openColorTag = false;
                                     newFunc.Subtype = 8;
-                                    newFunc.Tag = "<Color:Default>";
-                                    goro.Append(newFunc.Tag);
+                                    string tag = "<Color:Default>";
+                                    goro.Append(tag);
                                     newFunc.Args[2] = charCount;
-                                    newFunc.Args[4] = (short)newFunc.Tag.Length;
+                                    newFunc.Args[4] = (short)tag.Length;
                                     funcs.Add(newFunc);
                                     newFunc = new Function() { Type = 2, Args = new short[9] };
                                 }
@@ -840,7 +793,6 @@ namespace ParBoil.RGGFormats
                                     newFunc.Subtype = 1;
                                     newFunc.Args[0] = 0xa;
                                     newFunc.Args[2] = charCount;
-                                    newFunc.Tag = "";
                                     funcs.Add(newFunc);
                                     newFunc = new Function() { Type = 2, Args = new short[9] };
                                 }
@@ -860,7 +812,6 @@ namespace ParBoil.RGGFormats
                                         newFunc.Subtype = 1;
                                         newFunc.Args[0] = 0x14;
                                         newFunc.Args[2] = charCount;
-                                        newFunc.Tag = "";
                                         funcs.Add(newFunc);
                                         newFunc = new Function() { Type = 2, Args = new short[9] };
                                     }
