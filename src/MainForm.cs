@@ -21,8 +21,6 @@ namespace ParBoil
 
         private void openPAR()
         {
-            if (par != null)
-                par.Dispose();
 
             OpenFileDialog dialogue = new OpenFileDialog();
             dialogue.Title = "Open PAR Archive";
@@ -30,6 +28,9 @@ namespace ParBoil
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
+                if (par != null)
+                    par.Dispose();
+
                 project = dialogue.FileName + ".boil\\";
 
                 if (!Directory.Exists(project))
@@ -80,9 +81,9 @@ namespace ParBoil
 
                 treeViewPar.Nodes[0].EnsureVisible();
                 treeViewPar.EndUpdate();
-            }
 
-            Directory.SetCurrentDirectory(project);
+                Directory.SetCurrentDirectory(project);
+            }
         }
 
         private void tSMI_openPAR_Click(object sender, EventArgs e)
