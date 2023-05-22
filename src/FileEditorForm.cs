@@ -96,7 +96,7 @@ namespace ParBoil
             if (file.EditedControls.Count > 0)
             {
                 if (MessageBox.Show("There are unsaved changes." +
-                    "\n\n(For now, pressing OK will save changes to JSON.)", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                    "\n\n(For now, pressing OK will save changes to JSON, and output the file directly.)", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
                 {
                     e.Cancel = true;
                     return;
@@ -113,8 +113,7 @@ namespace ParBoil
                 File.Move(current, String.Format("ver{0:D4}.json", count), false);
                 WriteFileAsJSON(current);
 
-                // We should also copy the MSG fields back into the stream, then get that stream back into the node.
-                // Assuming that doesn't already occur when we edit the file's stream, but I don't think it will.
+                // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
 
                 // When that's done, generate a makeshift dropdown version selector. Just put it on a little generated form, for now.
                 // The generated form should move when the editor moves, and close when it closes.

@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using Yarhl.FileFormat;
+using Yarhl.FileSystem;
 using Yarhl.IO;
 
 namespace ParBoil.RGGFormats
@@ -79,7 +80,10 @@ namespace ParBoil.RGGFormats
                 throw new ArgumentNullException(nameof(source));
             }
 
-            return new MSGFormat(source.Stream, 0, source.Stream.Length);
+            var msgStream = new DataStream();
+            source.Stream.WriteTo(msgStream);
+            
+            return new MSGFormat(msgStream);
         }
 
         public override void LoadFromBin()
@@ -881,7 +885,6 @@ namespace ParBoil.RGGFormats
                     {
                         var message = header.Messages[m];
                         message.relativeOffset = text.Stream.Length;
-                        Debug.WriteLine(text.Stream.Length);
                         text.Write(message.Import, true);
                         message.Bytecount = (ushort)(text.Stream.Length - message.relativeOffset - 1);
                         message.FunctionTable = (uint)(offset + funcs.Stream.Length);
