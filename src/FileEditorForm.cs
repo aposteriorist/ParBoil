@@ -92,6 +92,7 @@ namespace ParBoil
         private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             Focus(); // Take focus away from the currently-focused control to have its LostFocus event occur here.
+
             if (file.EditedControls.Count > 0)
             {
                 if (MessageBox.Show("There are unsaved changes." +

@@ -28,12 +28,12 @@ namespace ParBoil.RGGFormats
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
-        public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
 
+        public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
         public abstract void ResizeAll(Size size);
         public abstract void Resize();
 
-        public abstract Type TypeOfHandle();
+        public abstract void WriteToBin();
 
         public abstract DataStream ToJSONStream();
         public abstract string ToJSONString();

@@ -51,7 +51,7 @@ namespace ParBoil.RGGFormats
         }
         public struct Message
         {
-            public uint Bytecount;
+            public ushort Bytecount;
             [JsonPropertyName("Function Count")]
             public byte FunctionCount;
             [JsonPropertyName("Message Pointer")]
@@ -63,6 +63,7 @@ namespace ParBoil.RGGFormats
             public int SpeakerIndex;
             public string Export;
             public string Import;
+            internal long relativeOffset;
         }
         public struct Function
         {
@@ -711,6 +712,8 @@ namespace ParBoil.RGGFormats
             }
 
             EditedControls.Clear();
+
+            WriteToBin();
         }
 
         private void UpdateMessage(RichTextBox box, uint s, uint h, uint m)
@@ -849,14 +852,97 @@ namespace ParBoil.RGGFormats
             }
         }
 
-        public void topTabs_GotFocus(object sender, EventArgs e)
+        public override void WriteToBin()
         {
-            Resize();
-        }
+            var writer = new DataWriter(Stream)
+            {
+                DefaultEncoding = Encoding.GetEncoding(932),
+                Endianness = EndiannessMode.BigEndian,
+            };
 
-        public override Type TypeOfHandle()
-        {
-            return typeof(TabControl);
+            uint offset = Sections[0].Headers[0].Messages[0].FunctionTable; // Cheap hack
+
+
+            var funcs = new DataWriter(new DataStream())
+            {
+                DefaultEncoding = Encoding.GetEncoding(932),
+                Endianness = EndiannessMode.BigEndian,
+            };
+
+            var text = new DataWriter(new DataStream())
+            {
+                DefaultEncoding = Encoding.GetEncoding(932),
+                Endianness = EndiannessMode.BigEndian,
+            };
+
+            foreach (var section in Sections)
+                foreach (var header in section.Headers)
+                    for (int m = 0; m < header.MessageCount; m++)
+                    {
+                        var message = header.Messages[m];
+                        message.relativeOffset = text.Stream.Length;
+                        Debug.WriteLine(text.Stream.Length);
+                        text.Write(message.Import, true);
+                        message.Bytecount = (ushort)(text.Stream.Length - message.relativeOffset - 1);
+                        message.FunctionTable = (uint)(offset + funcs.Stream.Length);
+
+                        foreach (var func in message._functions)
+                        {
+                            funcs.Write(func.Type); funcs.Write(func.Subtype);
+                            funcs.Write(func.Args[0]); funcs.Write(func.Args[1]);
+                            funcs.Write(func.Args[2]); funcs.Write(func.Args[3]);
+                            funcs.Write(func.Args[4]); funcs.Write((byte)func.Args[5]);
+                            funcs.Write((byte)func.Args[6]); funcs.Write((byte)func.Args[7]);
+                            funcs.Write((byte)func.Args[8]);
+                        }
+
+                        header.Messages[m] = message;
+                    }
+
+            // Around twice, unfortunately.
+            foreach (var section in Sections)
+                foreach (var header in section.Headers)
+                {
+                    writer.Stream.Seek(header.Pointer);
+
+                    foreach (var message in header.Messages)
+                    {
+                        writer.Write(message.Bytecount);
+                        writer.Write(message.FunctionCount);
+                        writer.Stream.Seek(1, SeekMode.Current);
+                        writer.Write((uint)(offset + funcs.Stream.Length + message.relativeOffset));
+                        writer.Write(message.FunctionTable);
+                    }
+                }
+
+            uint len = (uint)(offset + funcs.Stream.Length + text.Stream.Length);
+            text.WriteTimes(0, 4 - len % 4);
+            len += 4 - len % 4;
+
+            writer.Stream.Seek(0x3c);
+            writer.Write(len);
+
+
+            offset = len + (uint)(4 * Misc.Length);
+
+            var mtext = new DataWriter(new DataStream())
+            {
+                DefaultEncoding = Encoding.GetEncoding(932),
+                Endianness = EndiannessMode.BigEndian,
+            };
+
+            foreach (var entry in Misc)
+            {
+                text.Write((uint)(offset + mtext.Stream.Length));
+                mtext.Write(entry.Import, true);
+            }
+
+            writer.Stream.Seek(offset - text.Stream.Length - funcs.Stream.Length);
+            funcs.Stream.WriteTo(writer.Stream);
+            text.Stream.WriteTo(writer.Stream);
+            mtext.Stream.WriteTo(writer.Stream);
+
+            writer.Stream.WriteTo("jeff.msg");
         }
     }
 }
