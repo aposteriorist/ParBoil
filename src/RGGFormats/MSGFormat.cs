@@ -82,8 +82,15 @@ namespace ParBoil.RGGFormats
 
             var msgStream = new DataStream();
             source.Stream.WriteTo(msgStream);
-            
-            return new MSGFormat(msgStream);
+
+            return new MSGFormat(msgStream)
+            {
+                CanBeCompressed = source.CanBeCompressed,
+                IsCompressed = source.IsCompressed,
+                DecompressedSize = source.DecompressedSize,
+                Attributes = source.Attributes,
+                Timestamp = source.Timestamp,
+            };
         }
 
         public override void LoadFromBin()
@@ -244,6 +251,12 @@ namespace ParBoil.RGGFormats
 
                         Sections[s].Headers[h].Messages[m] = message;
                     }
+
+            CanBeCompressed = msg.CanBeCompressed;
+            IsCompressed = msg.IsCompressed;
+            DecompressedSize = msg.DecompressedSize;
+            Attributes = msg.Attributes;
+            Timestamp = msg.Timestamp;
         }
 
         public override string ToJSONString()
@@ -946,6 +959,8 @@ namespace ParBoil.RGGFormats
             mtext.Stream.WriteTo(writer.Stream);
 
             writer.Stream.WriteTo("jeff.msg");
+
+            DecompressedSize = (uint)Stream.Length;
         }
     }
 }
