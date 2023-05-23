@@ -225,20 +225,26 @@ namespace ParLibrary.Converter
 
         private static void CompressFiles(IEnumerable<Node> files, int compressorVersion)
         {
-            var compressorParameters = new CompressorParameters
-            {
-                Endianness = 0x00,
-                Version = (byte)compressorVersion,
-            };
-
             Parallel.ForEach(files, node =>
             {
                 var parFile = node.GetFormatAs<ParFile>();
-                if (parFile == null || !parFile.CanBeCompressed || parFile.IsCompressed || !parFile.WasCompressed || compressorVersion == 0x00 ||
-                    parFile.Stream.Length == 0)
+                if (parFile == null || !parFile.CanBeCompressed || parFile.IsCompressed ||
+                   (compressorVersion == 3 && !parFile.WasCompressed) || compressorVersion == 0x00 || parFile.Stream.Length == 0)
                 {
                     return;
                 }
+
+                var compressorParameters = new CompressorParameters
+                {
+                    Endianness = 0x00,
+                    //Version = compressorVersion == 3 ? parFile.CompressionVersion : (byte)compressorVersion,
+                    Version = compressorVersion switch
+                    {
+                        >= 3 => parFile.CompressionVersion,
+                        > 0 and < 3 => (byte)compressorVersion,
+                        _ => throw new NotImplementedException($"CompressFiles switch default: {compressorVersion}")
+                    },
+                };
 
                 FileCompressing?.Invoke(node);
                 var compressed =

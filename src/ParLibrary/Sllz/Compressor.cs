@@ -41,6 +41,11 @@ namespace ParLibrary.Sllz
 
             source.Stream.Seek(0);
 
+            if (this.compressorParameters.Version > 2)
+            {
+                this.compressorParameters.Version = source.CompressionVersion;
+            }
+
             DataStream outputDataStream = Compress(source.Stream, this.compressorParameters);
 
             var result = new ParFile(outputDataStream)

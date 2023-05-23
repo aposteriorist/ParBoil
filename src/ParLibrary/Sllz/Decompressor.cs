@@ -15,6 +15,8 @@ namespace ParLibrary.Sllz
     /// </summary>
     public class Decompressor : IConverter<ParFile, ParFile>
     {
+        private static byte _decompVersion = 0;
+
         /// <summary>Decompresses a SLLZ file.</summary>
         /// <returns>The decompressed file.</returns>
         /// <param name="source">Source file to decompress.</param>
@@ -33,7 +35,7 @@ namespace ParLibrary.Sllz
             {
                 CanBeCompressed = true,
                 IsCompressed = false,
-                WasCompressed = source.WasCompressed,
+                WasCompressed = true,
                 CompressionVersion = _decompVersion,
                 DecompressedSize = source.DecompressedSize,
                 Attributes = source.Attributes,
@@ -45,7 +47,6 @@ namespace ParLibrary.Sllz
             return result;
         }
 
-        private static byte _decompVersion = 0;
         private static DataStream Decompress(DataStream inputDataStream)
         {
             var reader = new DataReader(inputDataStream)
