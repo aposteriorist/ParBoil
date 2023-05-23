@@ -19,9 +19,8 @@ namespace ParBoil
             InitializeComponent();
         }
 
-        private void openPAR()
+        private void OpenPAR()
         {
-
             OpenFileDialog dialogue = new OpenFileDialog();
             dialogue.Title = "Open PAR Archive";
             dialogue.Filter = "PARC archives (*.par)|*.par|All files (*.*)|*.*";
@@ -83,12 +82,31 @@ namespace ParBoil
                 treeViewPar.EndUpdate();
 
                 Directory.SetCurrentDirectory(project);
+
+                //tSMI_savePAR.Enabled = true;
+            }
+        }
+
+        private void SavePARAs()
+        {
+            SaveFileDialog dialogue = new SaveFileDialog();
+            dialogue.Title = "Save PAR Archive As";
+            dialogue.Filter = "PARC archives (*.par)|*.par|All files (*.*)|*.*";
+
+            if (dialogue.ShowDialog() == DialogResult.OK)
+            {
+                //
             }
         }
 
         private void tSMI_openPAR_Click(object sender, EventArgs e)
         {
-            openPAR();
+            OpenPAR();
+        }
+
+        private void tSMI_savePARAs_Click(object sender, EventArgs e)
+        {
+            SavePARAs();
         }
 
         private void mainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -146,7 +164,7 @@ namespace ParBoil
             }
         }
 
-        private void TransformToFileTypeFormat (Node file)
+        private void TransformToFileTypeFormat(Node file)
         {
             switch (file.Name[^4..])
             {

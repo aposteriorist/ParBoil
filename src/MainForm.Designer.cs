@@ -31,6 +31,7 @@
             menuStripMain = new MenuStrip();
             tSMI_File = new ToolStripMenuItem();
             tSMI_openPAR = new ToolStripMenuItem();
+            tSMI_savePARAs = new ToolStripMenuItem();
             tSMI_Help = new ToolStripMenuItem();
             tSMI_About = new ToolStripMenuItem();
             treeViewPar = new TreeView();
@@ -54,7 +55,7 @@
             // 
             // tSMI_File
             // 
-            tSMI_File.DropDownItems.AddRange(new ToolStripItem[] { tSMI_openPAR });
+            tSMI_File.DropDownItems.AddRange(new ToolStripItem[] { tSMI_openPAR, tSMI_savePARAs });
             tSMI_File.ForeColor = Color.FromArgb(213, 213, 213);
             tSMI_File.Name = "tSMI_File";
             tSMI_File.Size = new Size(37, 20);
@@ -65,9 +66,20 @@
             tSMI_openPAR.BackColor = Color.FromArgb(87, 87, 87);
             tSMI_openPAR.ForeColor = SystemColors.ControlText;
             tSMI_openPAR.Name = "tSMI_openPAR";
-            tSMI_openPAR.Size = new Size(136, 22);
+            tSMI_openPAR.Size = new Size(180, 22);
             tSMI_openPAR.Text = "Open PAR...";
+            tSMI_openPAR.TextAlign = ContentAlignment.MiddleLeft;
             tSMI_openPAR.Click += tSMI_openPAR_Click;
+            // 
+            // tSMI_savePARAs
+            // 
+            tSMI_savePARAs.BackColor = Color.FromArgb(87, 87, 87);
+            tSMI_savePARAs.Enabled = false;
+            tSMI_savePARAs.Name = "tSMI_savePARAs";
+            tSMI_savePARAs.Size = new Size(180, 22);
+            tSMI_savePARAs.Text = "Save PAR As...";
+            tSMI_savePARAs.TextAlign = ContentAlignment.MiddleLeft;
+            tSMI_savePARAs.Click += tSMI_savePARAs_Click;
             // 
             // tSMI_Help
             // 
@@ -152,8 +164,9 @@
         private ToolStripMenuItem tSMI_Help;
         private ToolStripMenuItem tSMI_About;
         private ToolStripMenuItem tSMI_openPAR;
-        private TreeView treeViewPar;
+        private ToolStripMenuItem tSMI_savePARAs;
         private Label labelFileName;
+        private TreeView treeViewPar;
         private TextBox textBox_SelectedFileInfo;
     }
 }
