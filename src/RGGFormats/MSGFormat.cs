@@ -330,6 +330,7 @@ namespace ParBoil.RGGFormats
                     BackColor = formBackColor,
                     AutoScroll = true,
                     Margin = new Padding(0, 20, 0, 0),
+                    Tag = Misc[m].Import,
                 };
 
                 var export = new RichTextBox()
@@ -360,7 +361,11 @@ namespace ParBoil.RGGFormats
                 };
                 import.LostFocus += delegate
                 {
-                    if (import.CanUndo)
+                    UpdateSpeaker((int)import.Tag, import.Text);
+                };
+                import.TextChanged += delegate
+                {
+                    if (import.Text != (string)panel.Tag)
                     {
                         if (!EditedControls.Contains(import)) EditedControls.Add(import);
                     }
@@ -368,8 +373,8 @@ namespace ParBoil.RGGFormats
                     {
                         if (EditedControls.Contains(import)) EditedControls.Remove(import);
                     }
-                    UpdateSpeaker((int)import.Tag, import.Text);
                     Debug.WriteLine($"Number of edits: {EditedControls.Count}");
+                    ((FileEditorForm)import.FindForm()).UpdateTitle();
                 };
 
                 panel.Controls.Add(export);
@@ -504,7 +509,7 @@ namespace ParBoil.RGGFormats
                             ForeColor = formForeColor,
                             Font = formFont,
                             ReadOnly = true,
-                            Tag = m,
+                            Tag = (s, h, m),
                         };
                         InitializeText(textExport, message, false);
                         exportPanel.Controls.Add(textExport);
@@ -520,9 +525,10 @@ namespace ParBoil.RGGFormats
                         };
                         InitializeText(textImport, message, true);
                         if (textExport.Text == "") textImport.ReadOnly = true;
-                        textImport.LostFocus += delegate
+                        importPanel.Tag = textImport.Text;
+                        textImport.TextChanged += delegate
                         {
-                            if (textImport.CanUndo)
+                            if (textImport.Text != (string)importPanel.Tag)
                             {
                                 if (!EditedControls.Contains(textImport)) EditedControls.Add(textImport);
                             }
@@ -531,6 +537,7 @@ namespace ParBoil.RGGFormats
                                 if (EditedControls.Contains(textImport)) EditedControls.Remove(textImport);
                             }
                             Debug.WriteLine($"Number of edits: {EditedControls.Count}");
+                            ((FileEditorForm)textImport.FindForm()).UpdateTitle();
                         };
                         importPanel.Controls.Add(textImport);
 
@@ -961,8 +968,6 @@ namespace ParBoil.RGGFormats
             funcs.Stream.WriteTo(writer.Stream);
             text.Stream.WriteTo(writer.Stream);
             mtext.Stream.WriteTo(writer.Stream);
-
-            writer.Stream.WriteTo("jeff.msg");
 
             DecompressedSize = (uint)Stream.Length;
         }

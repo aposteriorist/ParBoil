@@ -84,6 +84,19 @@ namespace ParBoil
         private bool WorkingEnvironmentExists() => File.Exists(current);
 
 
+        public void UpdateTitle()
+        {
+            if (file.EditedControls != null)
+            {
+                if (file.EditedControls.Count > 0 && Text[^1] != '*')
+                {
+                    Text += '*';
+                }
+                else if (file.EditedControls.Count == 0 && Text[^1] == '*')
+                    Text = Text[..^1];
+            }
+        }
+
         private void FileEditorForm_Activated(object sender, EventArgs e)
         {
             Directory.SetCurrentDirectory(path);
@@ -112,6 +125,8 @@ namespace ParBoil
 
                 File.Move(current, String.Format("ver{0:D4}.json", count), false);
                 WriteFileAsJSON(current);
+
+                file.Stream.WriteTo(name);
 
                 // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
 
