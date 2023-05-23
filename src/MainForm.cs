@@ -14,9 +14,19 @@ namespace ParBoil
         private Node par;
         private string project;
 
+        private ParArchiveReaderParameters readerParams;
+        private ParArchiveWriterParameters writerParams;
+
         public MainForm()
         {
             InitializeComponent();
+
+            readerParams = new ParArchiveReaderParameters { Recursive = false };
+            writerParams = new ParArchiveWriterParameters
+            {
+                CompressorVersion = 3,
+                IncludeDots = false,
+            };
         }
 
         private void OpenPAR()
@@ -39,11 +49,9 @@ namespace ParBoil
                     File.Copy(dialogue.FileName, project + dialogue.SafeFileName + ".orig");
 
 
-                var parameters = new ParArchiveReaderParameters { Recursive = false, };
-
                 par = NodeFactory.FromFile(dialogue.FileName);
 
-                par.TransformWith<ParArchiveReader, ParArchiveReaderParameters>(parameters);
+                par.TransformWith<ParArchiveReader, ParArchiveReaderParameters>(readerParams);
 
                 treeViewPar.BeginUpdate();
                 treeViewPar.Nodes.Clear();
@@ -83,7 +91,7 @@ namespace ParBoil
 
                 Directory.SetCurrentDirectory(project);
 
-                //tSMI_savePAR.Enabled = true;
+                tSMI_savePARAs.Enabled = true;
             }
         }
 
@@ -95,7 +103,22 @@ namespace ParBoil
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
-                //
+                // SaveFileDialog has already asked the user if they're okay with overwriting,
+                // so we're good to go.
+
+                writerParams.OutputPath = dialogue.FileName;
+
+                Enabled = false;
+                DateTime startTime = DateTime.Now;
+                Debug.WriteLine("Creating PAR...");
+                // TO-DO: We need some clones.
+                // The nuget release of YARHL doesn't have any cloning, but it's there on Github.
+                // So I'll need to update the version being used myself.
+                par.TransformWith<ParArchiveWriter, ParArchiveWriterParameters>(writerParams);
+                Debug.WriteLine("Done.");
+                DateTime endTime = DateTime.Now;
+                Debug.WriteLine($"Time elapsed: {endTime - startTime:g}");
+                Enabled = true;
             }
         }
 
