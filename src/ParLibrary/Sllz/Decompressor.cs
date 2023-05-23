@@ -33,14 +33,19 @@ namespace ParLibrary.Sllz
             {
                 CanBeCompressed = true,
                 IsCompressed = false,
+                WasCompressed = source.WasCompressed,
+                CompressionVersion = _decompVersion,
                 DecompressedSize = source.DecompressedSize,
                 Attributes = source.Attributes,
                 Timestamp = source.Timestamp,
             };
 
+            _decompVersion = 0;
+
             return result;
         }
 
+        private static byte _decompVersion = 0;
         private static DataStream Decompress(DataStream inputDataStream)
         {
             var reader = new DataReader(inputDataStream)
@@ -60,6 +65,7 @@ namespace ParLibrary.Sllz
             byte endianness = reader.ReadByte();
             reader.Endianness = endianness == 0 ? EndiannessMode.LittleEndian : EndiannessMode.BigEndian;
             byte version = reader.ReadByte();
+            _decompVersion = version;
             ushort headerSize = reader.ReadUInt16();
 
             int decompressedSize = reader.ReadInt32();

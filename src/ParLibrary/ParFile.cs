@@ -20,6 +20,8 @@ namespace ParLibrary
         {
             this.CanBeCompressed = true;
             this.IsCompressed = false;
+            this.WasCompressed = false;
+            this.CompressionVersion = 0;
             this.DecompressedSize = 0;
             this.Attributes = 0x00000020;
             this.FileDate = DateTime.Now;
@@ -39,6 +41,8 @@ namespace ParLibrary
 
             this.CanBeCompressed = true;
             this.IsCompressed = false;
+            this.WasCompressed = false;
+            this.CompressionVersion = 0;
             this.DecompressedSize = (uint)stream.Length;
             this.Attributes = 0x00000020;
             this.FileDate = DateTime.Now;
@@ -55,6 +59,8 @@ namespace ParLibrary
         {
             this.CanBeCompressed = true;
             this.IsCompressed = false;
+            this.WasCompressed = false;
+            this.CompressionVersion = 0;
             this.DecompressedSize = (uint)length;
             this.Attributes = 0x00000020;
             this.FileDate = DateTime.Now;
@@ -69,6 +75,16 @@ namespace ParLibrary
         /// Gets or sets a value indicating whether the file is compressed.
         /// </summary>
         public bool IsCompressed { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the file was originally compressed.
+        /// </summary>
+        public bool WasCompressed { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating what version the file was originally compressed with.
+        /// </summary>
+        public byte CompressionVersion { get; set; }
 
         /// <summary>
         /// Gets or sets the file size (decompressed).

@@ -234,7 +234,7 @@ namespace ParLibrary.Converter
             Parallel.ForEach(files, node =>
             {
                 var parFile = node.GetFormatAs<ParFile>();
-                if (parFile == null || !parFile.CanBeCompressed || compressorVersion == 0x00 ||
+                if (parFile == null || !parFile.CanBeCompressed || parFile.IsCompressed || !parFile.WasCompressed || compressorVersion == 0x00 ||
                     parFile.Stream.Length == 0)
                 {
                     return;

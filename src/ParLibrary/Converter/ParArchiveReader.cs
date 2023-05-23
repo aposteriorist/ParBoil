@@ -148,6 +148,7 @@ namespace ParLibrary.Converter
                 {
                     CanBeCompressed = false, // Don't try to compress if the original was not compressed.
                     IsCompressed = compressionFlag == 0x80000000,
+                    WasCompressed = compressionFlag == 0x80000000,
                     DecompressedSize = size,
                     Attributes = attributes,
                     Timestamp = timestamp,

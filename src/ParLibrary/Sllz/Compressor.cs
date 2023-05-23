@@ -47,6 +47,8 @@ namespace ParLibrary.Sllz
             {
                 CanBeCompressed = false,
                 IsCompressed = true,
+                WasCompressed = source.WasCompressed,
+                CompressionVersion = source.CompressionVersion,
                 DecompressedSize = source.DecompressedSize,
                 Attributes = source.Attributes,
                 Timestamp = source.Timestamp,

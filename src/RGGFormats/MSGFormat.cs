@@ -87,6 +87,8 @@ namespace ParBoil.RGGFormats
             {
                 CanBeCompressed = source.CanBeCompressed,
                 IsCompressed = source.IsCompressed,
+                WasCompressed = source.WasCompressed,
+                CompressionVersion = source.CompressionVersion,
                 DecompressedSize = source.DecompressedSize,
                 Attributes = source.Attributes,
                 Timestamp = source.Timestamp,
@@ -254,6 +256,8 @@ namespace ParBoil.RGGFormats
 
             CanBeCompressed = msg.CanBeCompressed;
             IsCompressed = msg.IsCompressed;
+            WasCompressed = msg.WasCompressed;
+            CompressionVersion = msg.CompressionVersion;
             DecompressedSize = msg.DecompressedSize;
             Attributes = msg.Attributes;
             Timestamp = msg.Timestamp;
