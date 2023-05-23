@@ -5,6 +5,7 @@ namespace ParLibrary.Converter
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
@@ -132,7 +133,7 @@ namespace ParLibrary.Converter
                 writer.Write(0x00020001);
             }
 
-            writer.Write(0x00000000); // data size
+            writer.Write(0x00000000); // Initial data size
 
             writer.Write(folders.Count);
             writer.Write(folderTableOffset);
@@ -144,6 +145,9 @@ namespace ParLibrary.Converter
 
             WriteFolders(writer, folders);
             WriteFiles(writer, files, dataPosition);
+
+            dataStream.Seek(0xc);
+            writer.Write((uint)dataStream.Length);
 
             dataStream.Seek(0, SeekMode.End);
             writer.WritePadding(0, 2048);
