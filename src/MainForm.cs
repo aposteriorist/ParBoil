@@ -125,10 +125,10 @@ namespace ParBoil
                 DateTime startTime = DateTime.Now;
                 Debug.WriteLine("Creating PAR...");
 
-                var archiveStream = ParArchiveWriter.WriteArchive(par.GetFormatAs<NodeContainerFormat>(), writerParams);
+                var parArchive = (ParFile)ConvertFormat.With<ParArchiveWriter, ParArchiveWriterParameters>(writerParams, par.Format);
 
                 using var fileStream = DataStreamFactory.FromFile(dialogue.FileName, FileOpenMode.Write);
-                archiveStream.WriteTo(fileStream);
+                parArchive.Stream.WriteTo(fileStream);
 
                 Debug.WriteLine("Done.");
                 DateTime endTime = DateTime.Now;
