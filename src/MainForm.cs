@@ -47,14 +47,15 @@ namespace ParBoil
                 if (!File.Exists(project + dialogue.SafeFileName + ".orig"))
                     File.Copy(dialogue.FileName, project + dialogue.SafeFileName + ".orig");
 
-
-                par = NodeFactory.FromFile(dialogue.FileName);
+                using var inputStream = DataStreamFactory.FromFile(dialogue.FileName, FileOpenMode.Read);
+                par = NodeFactory.FromMemory(Path.GetFileName(dialogue.FileName));
+                inputStream.WriteTo(par.Stream);
 
                 readerParams = new ParArchiveReaderParameters
                 {
                     Recursive = false,
                     Tags = new Dictionary<string, dynamic>(),
-            };
+                };
 
                 par.TransformWith<ParArchiveReader, ParArchiveReaderParameters>(readerParams);
                 
@@ -102,7 +103,9 @@ namespace ParBoil
                 tSMI_savePARAs.Enabled = true;
             }
         }
-
+        // TO-DO: Test saving with compression of a single file, I suppose in comparison with PARC Shinada.
+        // And eventually, loading the project will also need to mean, on PAR load, grab every file with edits.
+        // Not sure how I'll go about doing that.
         private void SavePARAs()
         {
             SaveFileDialog dialogue = new SaveFileDialog();
