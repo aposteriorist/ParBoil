@@ -348,7 +348,7 @@ namespace ParLibrary.Converter
                 }
                 else
                 {
-                    if (node.Stream.Length < blockSize)
+                    if (node.Stream.Length <= blockSize)
                     {
                         blockSize -= node.Stream.Length;
                     }
