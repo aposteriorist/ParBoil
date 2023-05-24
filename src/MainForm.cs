@@ -4,6 +4,7 @@ using ParLibrary.Converter;
 using ParLibrary.Sllz;
 using System.Diagnostics;
 using System.Xml.Linq;
+using Yarhl.FileFormat;
 using Yarhl.FileSystem;
 using Yarhl.IO;
 
@@ -124,7 +125,10 @@ namespace ParBoil
                 DateTime startTime = DateTime.Now;
                 Debug.WriteLine("Creating PAR...");
 
-                ParArchiveWriter.WriteArchive(par.GetFormatAs<NodeContainerFormat>(), writerParams);
+                var archiveStream = ParArchiveWriter.WriteArchive(par.GetFormatAs<NodeContainerFormat>(), writerParams);
+
+                using var fileStream = DataStreamFactory.FromFile(dialogue.FileName, FileOpenMode.Write);
+                archiveStream.WriteTo(fileStream);
 
                 Debug.WriteLine("Done.");
                 DateTime endTime = DateTime.Now;

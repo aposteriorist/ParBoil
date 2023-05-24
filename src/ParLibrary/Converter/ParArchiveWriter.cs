@@ -170,12 +170,6 @@ namespace ParLibrary.Converter
             archiveStream.Seek(0, SeekMode.End);
             writer.WritePadding(0, 2048);
 
-            if (!string.IsNullOrEmpty(parameters.OutputPath))
-            {
-                using var fileStream = DataStreamFactory.FromFile(parameters.OutputPath, FileOpenMode.Write);
-                archiveStream.WriteTo(fileStream);
-            }
-
             return archiveStream;
         }
 
