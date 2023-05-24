@@ -73,7 +73,7 @@ namespace ParLibrary.Converter
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            DataStream dataStream = string.IsNullOrEmpty(this.parameters.OutputPath) ? DataStreamFactory.FromMemory() : DataStreamFactory.FromFile(this.parameters.OutputPath, FileOpenMode.Write);
+            using DataStream dataStream = string.IsNullOrEmpty(this.parameters.OutputPath) ? DataStreamFactory.FromMemory() : DataStreamFactory.FromFile(this.parameters.OutputPath, FileOpenMode.ReadWrite);
 
             var writer = new DataWriter(dataStream)
             {
@@ -152,7 +152,10 @@ namespace ParLibrary.Converter
             dataStream.Seek(0, SeekMode.End);
             writer.WritePadding(0, 2048);
 
-            var result = new ParFile(dataStream)
+            DataStream convertedDataStream = new DataStream();
+            dataStream.WriteTo(convertedDataStream);
+
+            var result = new ParFile(convertedDataStream)
             {
                 CanBeCompressed = false,
             };
