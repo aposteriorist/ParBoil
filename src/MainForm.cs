@@ -16,7 +16,6 @@ namespace ParBoil
 
         private ParArchiveReaderParameters readerParams;
         private ParArchiveWriterParameters writerParams;
-        private IDictionary<string, dynamic> parTags;
 
         public MainForm()
         {
@@ -51,17 +50,15 @@ namespace ParBoil
 
                 par = NodeFactory.FromFile(dialogue.FileName);
 
-                parTags = new Dictionary<string, dynamic>();
-
                 readerParams = new ParArchiveReaderParameters
                 {
                     Recursive = false,
-                    Tags = parTags,
-                };
+                    Tags = new Dictionary<string, dynamic>(),
+            };
 
                 par.TransformWith<ParArchiveReader, ParArchiveReaderParameters>(readerParams);
                 
-                foreach (var tag in parTags)
+                foreach (var tag in readerParams.Tags)
                     par.Tags.Add(tag);
 
                 treeViewPar.BeginUpdate();
@@ -120,15 +117,16 @@ namespace ParBoil
                 writerParams.OutputPath = dialogue.FileName;
 
                 Enabled = false;
+
                 DateTime startTime = DateTime.Now;
                 Debug.WriteLine("Creating PAR...");
-                // TO-DO: We need some clones.
-                // The nuget release of YARHL doesn't have any cloning, but it's there on Github.
-                // So I'll need to update the version being used myself.
-                par.TransformWith<ParArchiveWriter, ParArchiveWriterParameters>(writerParams);
+
+                ParArchiveWriter.WriteArchive(par.GetFormatAs<NodeContainerFormat>(), writerParams);
+
                 Debug.WriteLine("Done.");
                 DateTime endTime = DateTime.Now;
                 Debug.WriteLine($"Time elapsed: {endTime - startTime:g}");
+
                 Enabled = true;
             }
         }

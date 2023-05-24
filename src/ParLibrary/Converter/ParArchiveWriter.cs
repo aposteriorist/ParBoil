@@ -22,7 +22,7 @@ namespace ParLibrary.Converter
     {
         private ParArchiveWriterParameters parameters = new ParArchiveWriterParameters
         {
-            CompressorVersion = 0x01,
+            CompressorVersion = 3,
             IncludeDots = false,
         };
 
@@ -70,12 +70,28 @@ namespace ParLibrary.Converter
             {
                 throw new ArgumentNullException(nameof(source));
             }
+            
+            DataStream outputDataStream = WriteArchive(source, parameters);
 
+            var result = new ParFile(outputDataStream)
+            {
+                CanBeCompressed = false,
+            };
+
+            return result;
+        }
+
+        public static DataStream WriteArchive(NodeContainerFormat source, ParArchiveWriterParameters parameters)
+        {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            using var archiveStream = string.IsNullOrEmpty(this.parameters.OutputPath)
-                ? DataStreamFactory.FromMemory()
-                : DataStreamFactory.FromFile(this.parameters.OutputPath, FileOpenMode.ReadWrite);
+            parameters ??= new ParArchiveWriterParameters
+            {
+                CompressorVersion = 3,
+                IncludeDots = false,
+            };
+
+            var archiveStream = DataStreamFactory.FromMemory();
 
             var writer = new DataWriter(archiveStream)
             {
@@ -86,15 +102,15 @@ namespace ParLibrary.Converter
             var folders = new List<Node>();
             var files = new List<Node>();
 
-            if (this.parameters.IncludeDots)
+            if (parameters.IncludeDots)
             {
                 var parFolderRootNode = new Node(".", new NodeContainerFormat());
                 source.MoveChildrenTo(parFolderRootNode);
                 folders.Add(parFolderRootNode);
             }
 
-            GetFoldersAndFiles(source.Root, folders, files, this.parameters);
-            CompressFiles(files, this.parameters.CompressorVersion);
+            GetFoldersAndFiles(source.Root, folders, files, parameters);
+            CompressFiles(files, parameters.CompressorVersion);
 
             int headerSize = 32 + (64 * folders.Count) + (64 * files.Count);
             int folderTableOffset = headerSize;
@@ -154,15 +170,13 @@ namespace ParLibrary.Converter
             archiveStream.Seek(0, SeekMode.End);
             writer.WritePadding(0, 2048);
 
-            var convertedDataStream = new DataStream();
-            archiveStream.WriteTo(convertedDataStream);
-
-            var result = new ParFile(convertedDataStream)
+            if (!string.IsNullOrEmpty(parameters.OutputPath))
             {
-                CanBeCompressed = false,
-            };
+                using var fileStream = DataStreamFactory.FromFile(parameters.OutputPath, FileOpenMode.Write);
+                archiveStream.WriteTo(fileStream);
+            }
 
-            return result;
+            return archiveStream;
         }
 
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownserhip dispose transferred")]
