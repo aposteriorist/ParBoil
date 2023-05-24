@@ -189,7 +189,16 @@ namespace ParLibrary.Converter
             {
                 if (parameters.Recursive && files[i].Name.EndsWith(".par", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    files[i].TransformWith<ParArchiveReader, ParArchiveReaderParameters>(parameters);
+                    var recursiveParameters = new ParArchiveReaderParameters()
+                    {
+                        Recursive = true,
+                        Tags = new Dictionary<string, dynamic>(),
+                    };
+
+                    files[i].TransformWith<ParArchiveReader, ParArchiveReaderParameters>(recursiveParameters);
+
+                    foreach (var tag in recursiveParameters.Tags)
+                        files[i].Tags.Add(tag);
                 }
 
                 node.Add(files[i]);
