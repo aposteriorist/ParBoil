@@ -62,7 +62,7 @@ namespace ParLibrary.Converter
         /// Converts a PAR format into binary.
         /// </summary>
         /// <param name="source">The par.</param>
-        /// <returns>The BinaryFormat.</returns>
+        /// <returns>The ParFile.</returns>
         [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownserhip dispose transferred")]
         public ParFile Convert(NodeContainerFormat source)
         {
@@ -73,9 +73,11 @@ namespace ParLibrary.Converter
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            using DataStream dataStream = string.IsNullOrEmpty(this.parameters.OutputPath) ? DataStreamFactory.FromMemory() : DataStreamFactory.FromFile(this.parameters.OutputPath, FileOpenMode.ReadWrite);
+            using var archiveStream = string.IsNullOrEmpty(this.parameters.OutputPath)
+                ? DataStreamFactory.FromMemory()
+                : DataStreamFactory.FromFile(this.parameters.OutputPath, FileOpenMode.ReadWrite);
 
-            var writer = new DataWriter(dataStream)
+            var writer = new DataWriter(archiveStream)
             {
                 DefaultEncoding = Encoding.GetEncoding(1252),
                 Endianness = EndiannessMode.BigEndian,
@@ -146,14 +148,14 @@ namespace ParLibrary.Converter
             WriteFolders(writer, folders);
             WriteFiles(writer, files, dataPosition);
 
-            dataStream.Seek(0xc);
-            writer.Write((uint)dataStream.Length);
+            archiveStream.Seek(0xc);
+            writer.Write((uint)archiveStream.Length);
 
-            dataStream.Seek(0, SeekMode.End);
+            archiveStream.Seek(0, SeekMode.End);
             writer.WritePadding(0, 2048);
 
-            DataStream convertedDataStream = new DataStream();
-            dataStream.WriteTo(convertedDataStream);
+            var convertedDataStream = new DataStream();
+            archiveStream.WriteTo(convertedDataStream);
 
             var result = new ParFile(convertedDataStream)
             {
