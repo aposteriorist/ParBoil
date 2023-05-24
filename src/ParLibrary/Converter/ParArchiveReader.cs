@@ -5,6 +5,7 @@ namespace ParLibrary.Converter
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
     using Yarhl.FileFormat;
@@ -74,19 +75,24 @@ namespace ParLibrary.Converter
                 throw new FormatException("PARC: Bad magic Id.");
             }
 
-            result.Root.Tags["PlatformId"] = reader.ReadByte();
+            if (parameters.Tags == null)
+            {
+                parameters.Tags = new Dictionary<string, dynamic>();
+            }
+
+            parameters.Tags["PlatformId"] = reader.ReadByte();
             byte endianness = reader.ReadByte();
-            result.Root.Tags["Endianness"] = endianness;
-            result.Root.Tags["SizeExtended"] = reader.ReadByte();
-            result.Root.Tags["Relocated"] = reader.ReadByte();
+            parameters.Tags["Endianness"] = endianness;
+            parameters.Tags["SizeExtended"] = reader.ReadByte();
+            parameters.Tags["Relocated"] = reader.ReadByte();
 
             if (endianness == 0x00)
             {
                 reader.Endianness = EndiannessMode.LittleEndian;
             }
 
-            result.Root.Tags["Version"] = reader.ReadInt32();
-            result.Root.Tags["DataSize"] = reader.ReadInt32();
+            parameters.Tags["Version"] = reader.ReadInt32();
+            parameters.Tags["DataSize"] = reader.ReadInt32();
 
             int totalFolderCount = reader.ReadInt32();
             int folderInfoOffset = reader.ReadInt32();

@@ -16,12 +16,12 @@ namespace ParBoil
 
         private ParArchiveReaderParameters readerParams;
         private ParArchiveWriterParameters writerParams;
+        private IDictionary<string, dynamic> parTags;
 
         public MainForm()
         {
             InitializeComponent();
 
-            readerParams = new ParArchiveReaderParameters { Recursive = false };
             writerParams = new ParArchiveWriterParameters
             {
                 CompressorVersion = 3,
@@ -51,7 +51,18 @@ namespace ParBoil
 
                 par = NodeFactory.FromFile(dialogue.FileName);
 
+                parTags = new Dictionary<string, dynamic>();
+
+                readerParams = new ParArchiveReaderParameters
+                {
+                    Recursive = false,
+                    Tags = parTags,
+                };
+
                 par.TransformWith<ParArchiveReader, ParArchiveReaderParameters>(readerParams);
+                
+                foreach (var tag in parTags)
+                    par.Tags.Add(tag);
 
                 treeViewPar.BeginUpdate();
                 treeViewPar.Nodes.Clear();
