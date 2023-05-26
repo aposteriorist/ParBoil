@@ -1,4 +1,4 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,8 +33,8 @@ namespace ParBoil.RGGFormats
         public abstract void ResizeAll(Size size);
         public abstract void Resize();
 
-        public abstract void WriteToBin();
-
+        public abstract void ProcessEdits();
+        public abstract DataStream AsBinStream(bool overwrite = false);
         public abstract DataStream ToJSONStream();
         public abstract string ToJSONString();
         public abstract void FormClosing();

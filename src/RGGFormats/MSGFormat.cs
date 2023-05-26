@@ -1,4 +1,4 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System;
 using System.Composition;
 using System.Diagnostics;
@@ -733,6 +733,12 @@ namespace ParBoil.RGGFormats
 
         public override void FormClosing()
         {
+            ProcessEdits();
+            AsBinStream();
+        }
+
+        public override void ProcessEdits()
+        {
             foreach (RichTextBox box in EditedControls)
             {
                 if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
@@ -880,16 +886,24 @@ namespace ParBoil.RGGFormats
             }
         }
 
-        public override void WriteToBin()
+        public override DataStream AsBinStream(bool overwrite = false)
         {
-            var writer = new DataWriter(Stream)
+            DataWriter writer;
+            if (overwrite)
             {
-                DefaultEncoding = Encoding.GetEncoding(932),
-                Endianness = EndiannessMode.BigEndian,
-            };
+                writer = new DataWriter(Stream);
+            }
+            else
+            {
+                writer = new DataWriter(DataStreamFactory.FromMemory());
+
+                Stream.WriteTo(writer.Stream);
+            }
+            writer.DefaultEncoding = Encoding.GetEncoding(932);
+            writer.Endianness = EndiannessMode.BigEndian;
+
 
             uint offset = Sections[0].Headers[0].Messages[0].FunctionTable; // Cheap hack
-
 
             var funcs = new DataWriter(new DataStream())
             {
@@ -969,7 +983,14 @@ namespace ParBoil.RGGFormats
             text.Stream.WriteTo(writer.Stream);
             mtext.Stream.WriteTo(writer.Stream);
 
-            DecompressedSize = (uint)Stream.Length;
+            if (overwrite)
+            {
+                DecompressedSize = (uint)Stream.Length;
+                // TO-DO: Add an option that, if selected, overwrites the original timestamp.
+                // FileDate = DateTime.Now;
+            }
+
+            return writer.Stream;
         }
     }
 }

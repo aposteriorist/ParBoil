@@ -70,6 +70,32 @@ namespace ParBoil
                 file.ToJSONStream().WriteTo(jsoname);
         }
 
+        private void SaveNewVersion()
+        {
+            file.ProcessEdits();
+
+            uint count = 0;
+            foreach (string file in Directory.GetFiles(path))
+                if (file[^12..].StartsWith("ver"))
+                    count++;
+
+            File.Move(current, String.Format("ver{0:D4}.json", count), false);
+            WriteFileAsJSON(current);
+        }
+
+        private void LoadVersion(uint version)
+        {
+            // Currently ignores all consequences of loading.
+            name = String.Format("ver{0:D4}.json", version);
+
+            if (File.Exists(name))
+            {
+                using var json = DataStreamFactory.FromFile(name, FileOpenMode.Read);
+
+                file.LoadFromJSON(json);
+            }
+        }
+
 
         private void CreateWorkingEnvironment() => WriteFileAsJSON(current);
 
@@ -114,18 +140,8 @@ namespace ParBoil
                     return;
                 }
 
-                file.FormClosing();
-
-                uint count = 0;
-                // Write to the JSON on close. For now, make it version files automatically.
-                foreach (string file in Directory.GetFiles(path))
-                    if (file[^12..].StartsWith("ver"))
-                        count++;
-
-                File.Move(current, String.Format("ver{0:D4}.json", count), false);
-                WriteFileAsJSON(current);
-
-                file.Stream.WriteTo(name);
+                SaveNewVersion();
+                file.AsBinStream(overwrite: true).WriteTo(name);
 
                 // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
 
