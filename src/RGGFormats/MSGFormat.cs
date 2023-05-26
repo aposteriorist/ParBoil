@@ -1,4 +1,4 @@
-using ParLibrary;
+﻿using ParLibrary;
 using System;
 using System.Composition;
 using System.Diagnostics;
@@ -746,8 +746,6 @@ namespace ParBoil.RGGFormats
             }
 
             EditedControls.Clear();
-
-            WriteToBin();
         }
 
         private void UpdateMessage(RichTextBox box, uint s, uint h, uint m)
