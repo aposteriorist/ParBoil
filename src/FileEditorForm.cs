@@ -17,9 +17,11 @@ using Yarhl.IO;
 
 namespace ParBoil
 {
+    using PM = ProjectManager;
+
     public partial class FileEditorForm : Form
     {
-        public FileEditorForm(string project, Node node)
+        public FileEditorForm(Node node)
         {
             InitializeComponent();
 
@@ -27,9 +29,7 @@ namespace ParBoil
             Text += node.Name;
             name = node.Name;
 
-            this.project = project;
-
-            path = project + node.Path[1..];
+            path = PM.Project + node.Path[1..];
 
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
@@ -54,7 +54,6 @@ namespace ParBoil
             Refresh();
         }
 
-        private string project;
         private string path;
         private string name;
         private RGGFormat file;
@@ -134,7 +133,7 @@ namespace ParBoil
                 // The generated form should move when the editor moves, and close when it closes.
             }
 
-            Directory.SetCurrentDirectory(project);
+            Directory.SetCurrentDirectory(PM.Project);
         }
 
         private void FileEditorForm_Resize(object sender, EventArgs e) => file.Resize();

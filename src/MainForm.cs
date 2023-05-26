@@ -173,7 +173,7 @@ public partial class MainForm : Form
         if (file.Format is not MSGFormat)
             return;
 
-            var editor = new FileEditorForm(ProjectManager.Project, file);
+        var editor = new FileEditorForm(file);
         editor.Show();
     }
 }
