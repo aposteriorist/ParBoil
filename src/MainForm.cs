@@ -10,58 +10,26 @@ using Yarhl.IO;
 
 namespace ParBoil
 {
+    using PM = ProjectManager;
+
     public partial class MainForm : Form
     {
-        private Node par;
-        private string project;
-
-        private ParArchiveReaderParameters readerParams;
-        private ParArchiveWriterParameters writerParams;
-
         public MainForm()
         {
             InitializeComponent();
 
-            writerParams = new ParArchiveWriterParameters
-            {
-                CompressorVersion = 3,
-                IncludeDots = false,
-            };
+            PM.Initialize();
         }
 
         private void OpenPAR()
         {
             OpenFileDialog dialogue = new OpenFileDialog();
             dialogue.Title = "Open PAR Archive";
-            dialogue.Filter = "PARC archives (*.par)|*.par|All files (*.*)|*.*";
+            dialogue.Filter = "RGG PAR archives (*.par)|*.par|All files (*.*)|*.*";
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
-                if (par != null)
-                    par.Dispose();
-
-                project = dialogue.FileName + ".boil\\";
-
-                if (!Directory.Exists(project))
-                    Directory.CreateDirectory(project);
-
-                if (!File.Exists(project + dialogue.SafeFileName + ".orig"))
-                    File.Copy(dialogue.FileName, project + dialogue.SafeFileName + ".orig");
-
-                using var inputStream = DataStreamFactory.FromFile(dialogue.FileName, FileOpenMode.Read);
-                par = NodeFactory.FromMemory(Path.GetFileName(dialogue.FileName));
-                inputStream.WriteTo(par.Stream);
-
-                readerParams = new ParArchiveReaderParameters
-                {
-                    Recursive = false,
-                    Tags = new Dictionary<string, dynamic>(),
-                };
-
-                par.TransformWith<ParArchiveReader, ParArchiveReaderParameters>(readerParams);
-                
-                foreach (var tag in readerParams.Tags)
-                    par.Tags.Add(tag);
+                PM.FromFile(dialogue.FileName);
 
                 treeViewPar.BeginUpdate();
                 treeViewPar.Nodes.Clear();
@@ -71,7 +39,7 @@ namespace ParBoil
                 TreeNode parent = null;
                 TreeNode child;
 
-                foreach (Node node in Navigator.IterateNodes(par))
+                foreach (Node node in Navigator.IterateNodes(PM.Par))
                 {
                     child = new TreeNode(node.Name);
                     child.Name = node.Name;
@@ -99,11 +67,10 @@ namespace ParBoil
                 treeViewPar.Nodes[0].EnsureVisible();
                 treeViewPar.EndUpdate();
 
-                Directory.SetCurrentDirectory(project);
-
                 tSMI_savePARAs.Enabled = true;
             }
         }
+
         // TO-DO: Test saving with compression of a single file, I suppose in comparison with PARC Shinada.
         // And eventually, loading the project will also need to mean, on PAR load, grab every file with edits.
         // Not sure how I'll go about doing that.
@@ -111,28 +78,16 @@ namespace ParBoil
         {
             SaveFileDialog dialogue = new SaveFileDialog();
             dialogue.Title = "Save PAR Archive As";
-            dialogue.Filter = "PARC archives (*.par)|*.par|All files (*.*)|*.*";
+            dialogue.Filter = "RGG PAR archives (*.par)|*.par|All files (*.*)|*.*";
 
             if (dialogue.ShowDialog() == DialogResult.OK)
             {
                 // SaveFileDialog has already asked the user if they're okay with overwriting,
                 // so we're good to go.
 
-                writerParams.OutputPath = dialogue.FileName;
-
                 Enabled = false;
 
-                DateTime startTime = DateTime.Now;
-                Debug.WriteLine("Creating PAR...");
-
-                var parArchive = (ParFile)ConvertFormat.With<ParArchiveWriter, ParArchiveWriterParameters>(writerParams, par.Format);
-
-                using var fileStream = DataStreamFactory.FromFile(dialogue.FileName, FileOpenMode.Write);
-                parArchive.Stream.WriteTo(fileStream);
-
-                Debug.WriteLine("Done.");
-                DateTime endTime = DateTime.Now;
-                Debug.WriteLine($"Time elapsed: {endTime - startTime:g}");
+                PM.ToFile(dialogue.FileName);
 
                 Enabled = true;
             }
@@ -150,8 +105,7 @@ namespace ParBoil
 
         private void mainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (par != null)
-                par.Dispose();
+            ProjectManager.Close();
         }
 
         private string getFileType(Node node)
@@ -219,7 +173,7 @@ namespace ParBoil
             if (file.Format is not MSGFormat)
                 return;
 
-            var editor = new FileEditorForm(project, file);
+            var editor = new FileEditorForm(ProjectManager.Project, file);
             editor.Show();
         }
     }
