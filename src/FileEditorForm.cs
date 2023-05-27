@@ -25,16 +25,16 @@ namespace ParBoil
         {
             InitializeComponent();
 
+            this.node = node;
             file = node.GetFormatAs<RGGFormat>();
             Text += node.Name;
-            name = node.Name;
 
-            path = PM.Project + node.Path[1..];
+            WorkingFolder = PM.Project + node.Path[1..];
 
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
+            if (!Directory.Exists(WorkingFolder))
+                Directory.CreateDirectory(WorkingFolder);
 
-            Directory.SetCurrentDirectory(path);
+            Directory.SetCurrentDirectory(WorkingFolder);
 
 
             if (WorkingEnvironmentExists())
@@ -54,14 +54,14 @@ namespace ParBoil
             Refresh();
         }
 
-        private string path;
-        private string name;
-        private RGGFormat file;
+        private readonly Node node;
+        private readonly RGGFormat file;
+        private readonly string WorkingFolder;
 
-        private string current = "current.json";
+        private readonly string current = "current.json";
 
-        private Color EditableColor = Color.FromArgb(45, 45, 45);
-        private Font EditorFont = new Font("MS Mincho", 18, FontStyle.Regular);
+        private readonly Color EditableColor = Color.FromArgb(45, 45, 45);
+        private readonly Font EditorFont = new Font("MS Mincho", 18, FontStyle.Regular);
 
 
         private void WriteFileAsJSON(string jsoname)
@@ -75,7 +75,7 @@ namespace ParBoil
             file.ProcessEdits();
 
             uint count = 0;
-            foreach (string file in Directory.GetFiles(path))
+            foreach (string file in Directory.GetFiles(WorkingFolder))
                 if (file[^12..].StartsWith("ver"))
                     count++;
 
@@ -86,7 +86,7 @@ namespace ParBoil
         private void LoadVersion(uint version)
         {
             // Currently ignores all consequences of loading.
-            name = String.Format("ver{0:D4}.json", version);
+            string name = String.Format("ver{0:D4}.json", version);
 
             if (File.Exists(name))
             {
@@ -124,7 +124,7 @@ namespace ParBoil
 
         private void FileEditorForm_Activated(object sender, EventArgs e)
         {
-            Directory.SetCurrentDirectory(path);
+            Directory.SetCurrentDirectory(WorkingFolder);
         }
 
         private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)

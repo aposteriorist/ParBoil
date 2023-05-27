@@ -254,8 +254,8 @@ namespace ParBoil.RGGFormats
                         Sections[s].Headers[h].Messages[m] = message;
                     }
 
-            CanBeCompressed = msg.CanBeCompressed;
-            IsCompressed = msg.IsCompressed;
+            CanBeCompressed = true;
+            IsCompressed = false;
             WasCompressed = msg.WasCompressed;
             CompressionVersion = msg.CompressionVersion;
             DecompressedSize = msg.DecompressedSize;
