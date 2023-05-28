@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -98,7 +98,7 @@ internal class ProjectManager
                 var file = Navigator.SearchNode(Par, includePath);
                 var oldFormat = file.GetFormatAs<ParFile>();
 
-                string absoluteIncludePath = $"{Project}{includePath}/{Path.GetFileName(includePath)}";
+                string absoluteIncludePath = $"{Project}{file.Path}/{file.Name}";
 
                 if (!File.Exists(absoluteIncludePath))
                 {
@@ -162,11 +162,17 @@ internal class ProjectManager
         if (IncludedStreams.ContainsKey(file.Path))
             IncludedStreams.Remove(file.Path);
 
+        ParFile oldFormat;
         if (ReplacedFormats.ContainsKey(file.Path))
+        {
+            oldFormat = ReplacedFormats[file.Path];
             ReplacedFormats.Remove(file.Path);
+        }
+        else
+        {
+            oldFormat = file.GetFormatAs<ParFile>();
+        }
 
-
-        var oldFormat = file.GetFormatAs<ParFile>();
         var newStream = file.GetFormatAs<RGGFormat>().AsBinStream();
 
         IncludedStreams.Add(file.Path, newStream);
@@ -186,7 +192,7 @@ internal class ProjectManager
         file.ChangeFormat(newFormat, disposePreviousFormat: false);
 
         // Write the modified stream out to disk as a file, to be loaded from if need be.
-        newStream.WriteTo(file.Name);
+        newStream.WriteTo($"{Project}{file.Path}/{file.Name}");
 
         // .include file will be written to on close, not here.
     }
