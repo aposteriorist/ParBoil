@@ -141,7 +141,7 @@ namespace ParBoil
                 }
 
                 SaveNewVersion();
-                file.AsBinStream(overwrite: true).WriteTo(name);
+                PM.IncludeFile(node); // Automatic for now
 
                 // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
 

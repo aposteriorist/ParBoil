@@ -155,10 +155,18 @@ namespace ParLibrary.Converter
                     CanBeCompressed = false, // Don't try to compress if the original was not compressed.
                     IsCompressed = compressionFlag == 0x80000000,
                     WasCompressed = compressionFlag == 0x80000000,
+                    CompressionVersion = 0,
                     DecompressedSize = size,
                     Attributes = attributes,
                     Timestamp = timestamp,
                 };
+
+                if (file.IsCompressed)
+                {
+                    reader.Stream.PushToPosition(offset + 5);
+                    file.CompressionVersion = reader.ReadByte();
+                    reader.Stream.PopPosition();
+                }
 
                 files[i] = new Node(fileNames[i], file)
                 {
