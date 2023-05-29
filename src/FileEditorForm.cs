@@ -49,8 +49,8 @@ namespace ParBoil
                 }
             }
 
-            file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
             Controls.Clear();
+            file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
             Controls.Add(file.Handle);
 
             Refresh();
@@ -133,23 +133,28 @@ namespace ParBoil
         {
             if (file.EditedControls.Count > 0)
             {
-                if (MessageBox.Show("There are unsaved changes." +
-                    "\n\n(For now, pressing OK will save changes to JSON, and output the file directly.)", "Warning", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                var result = MessageBox.Show("There are unsaved changes." +
+                    "\n\nDo you want to save your changes as a new version automatically?", "Unsaved Changes", MessageBoxButtons.YesNoCancel);
+                if (result == DialogResult.Cancel)
                 {
                     e.Cancel = true;
-                    return;
                 }
+                else
+                {
+                    if (result == DialogResult.Yes)
+                    {
+                        SaveNewVersion();
+                        PM.IncludeFile(node); // Automatic for now
 
-                SaveNewVersion();
-                PM.IncludeFile(node); // Automatic for now
-
-                // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
+                        // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
 
                 // When that's done, generate a makeshift dropdown version selector. Just put it on a little generated form, for now.
                 // The generated form should move when the editor moves, and close when it closes.
-            }
+                    }
 
-            Directory.SetCurrentDirectory(PM.Project);
+                    Directory.SetCurrentDirectory(PM.Project);
+                }
+            }
         }
 
         private void FileEditorForm_Resize(object sender, EventArgs e) => file.Resize();
