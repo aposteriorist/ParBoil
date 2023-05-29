@@ -207,6 +207,8 @@ namespace ParBoil.RGGFormats
                 reader.Stream.PopPosition();
                 reader.Stream.Position += 6;
             }
+
+            Loaded = true;
         }
 
         public override void LoadFromJSON(DataStream jsonStream)
@@ -261,6 +263,8 @@ namespace ParBoil.RGGFormats
             DecompressedSize = msg.DecompressedSize;
             Attributes = msg.Attributes;
             Timestamp = msg.Timestamp;
+
+            Loaded = true;
         }
 
         public override string ToJSONString()
@@ -361,11 +365,15 @@ namespace ParBoil.RGGFormats
                 };
                 import.LostFocus += delegate
                 {
-                    UpdateSpeaker((int)import.Tag, import.Text);
+                    if ((string)panel.Tag != import.Text && import.Text != "")
+                    {
+                        panel.Tag = import.Text;
+                        UpdateSpeaker((int)import.Tag, import.Text);
+                    }
                 };
                 import.TextChanged += delegate
                 {
-                    if (import.Text != (string)panel.Tag)
+                    if (import.Text != Misc[(int)import.Tag].Import)
                     {
                         if (!EditedControls.Contains(import)) EditedControls.Add(import);
                     }
@@ -511,7 +519,7 @@ namespace ParBoil.RGGFormats
                             ReadOnly = true,
                             Tag = (s, h, m),
                         };
-                        InitializeText(textExport, message, false);
+                        InitializeText(textExport, message, import: false);
                         exportPanel.Controls.Add(textExport);
 
                         var textImport = new RichTextBox()
@@ -523,7 +531,7 @@ namespace ParBoil.RGGFormats
                             Font = formFont,
                             Tag = (s, h, m),
                         };
-                        InitializeText(textImport, message, true);
+                        InitializeText(textImport, message, import: true);
                         if (textExport.Text == "") textImport.ReadOnly = true;
                         importPanel.Tag = textImport.Text;
                         textImport.TextChanged += delegate
@@ -630,11 +638,8 @@ namespace ParBoil.RGGFormats
             sectionTab.Refresh();
         }
 
-        private void UpdateSpeaker (int entry, string import)
+        private void UpdateSpeaker(int entry, string import)
         {
-            if (Misc[entry].Import == import)
-                return;
-
             var topTabs = (TabControl)Handle;
 
             for (int s = 1; s < topTabs.TabCount; s++)
@@ -660,8 +665,6 @@ namespace ParBoil.RGGFormats
                     }
                 }
             }
-
-            Misc[entry].Import = import;
         }
 
         private void InitializeText(RichTextBox box, Message msg, bool import)
@@ -743,6 +746,24 @@ namespace ParBoil.RGGFormats
             {
                 if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
                     UpdateMessage(box, s, h, m);
+                else
+                    Misc[(int)box.Tag].Import = box.Text;
+            }
+
+            EditedControls.Clear();
+        }
+
+        public override void RevertEdits()
+        {
+            foreach (RichTextBox box in EditedControls)
+            {
+                if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
+                    InitializeText(box, Sections[s].Headers[h].Messages[m], import: true);
+                else
+                {
+                    box.Text = Misc[(int)box.Tag].Import;
+                    box.Parent.Tag = box.Text;
+                }
             }
 
             EditedControls.Clear();

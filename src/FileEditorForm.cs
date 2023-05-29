@@ -36,15 +36,17 @@ namespace ParBoil
 
             Directory.SetCurrentDirectory(WorkingFolder);
 
-
-            if (WorkingEnvironmentExists())
+            if (!file.Loaded)
             {
-                LoadWorkingEnvironment();
-            }
-            else
-            {
-                file.LoadFromBin();
-                CreateWorkingEnvironment();
+                if (WorkingEnvironmentExists())
+                {
+                    LoadWorkingEnvironment();
+                }
+                else
+                {
+                    file.LoadFromBin();
+                    CreateWorkingEnvironment();
+                }
             }
 
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
@@ -129,8 +131,6 @@ namespace ParBoil
 
         private void FileEditorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Focus(); // Take focus away from the currently-focused control to have its LostFocus event occur here.
-
             if (file.EditedControls.Count > 0)
             {
                 if (MessageBox.Show("There are unsaved changes." +
