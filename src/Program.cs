@@ -1,3 +1,5 @@
+using Yarhl.IO;
+
 namespace ParBoil
 {
     internal static class Program
@@ -12,6 +14,16 @@ namespace ParBoil
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new MainForm());
+        }
+
+        public static DataStream CopyStreamFromFile(string fileName, FileOpenMode mode)
+        {
+            using DataStream fileStream = DataStreamFactory.FromFile(fileName, mode);
+            DataStream memoryStream = DataStreamFactory.FromMemory();
+
+            fileStream.WriteTo(memoryStream);
+
+            return memoryStream;
         }
     }
 }

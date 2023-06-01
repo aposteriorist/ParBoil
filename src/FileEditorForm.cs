@@ -150,15 +150,12 @@ namespace ParBoil
                 tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
             }
 
-            using var json = DataStreamFactory.FromFile(mostRecentFile, FileOpenMode.Read);
+            var json = Program.CopyStreamFromFile(mostRecentFile, FileOpenMode.Read);
 
             file.LoadFromJSON(json);
 
-            var jsonCopy = DataStreamFactory.FromMemory();
-            json.WriteTo(jsonCopy);
-
             node.Tags["SelectedVersion"] = (string)tS_VersionSelector.Items[0];
-            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = jsonCopy;
+            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = json;
 
             tS_VersionSelector.SelectedIndex = 0;
         }
@@ -231,11 +228,9 @@ namespace ParBoil
 
                 if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
                 {
-                    using var json = DataStreamFactory.FromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
-                    var jsonCopy = DataStreamFactory.FromMemory();
-                    json.WriteTo(jsonCopy);
+                    var json = Program.CopyStreamFromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
 
-                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = jsonCopy;
+                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = json;
                 }
 
                 file.LoadFromJSON(node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]]);

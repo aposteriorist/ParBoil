@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,8 +24,9 @@ internal class ProjectManager
     private static ParArchiveReaderParameters readerParams;
     private static ParArchiveWriterParameters writerParams;
 
-    private static Dictionary<string, DataStream> IncludedStreams;
-    private static Dictionary<string, ParFile> ReplacedFormats;
+    private static List<Node> includedNodes;
+    private static Dictionary<string, DataStream> includedStreams;
+    private static Dictionary<string, ParFile> replacedFormats;
 
     public static void Initialize()
     {
@@ -38,14 +39,14 @@ internal class ProjectManager
 
     public static void Close()
     {
-        if (ReplacedFormats.Count > 0)
+        if (replacedFormats != null && replacedFormats.Count > 0)
         {
             Directory.SetCurrentDirectory(Project);
 
             using var includeFile = DataStreamFactory.FromFile($"{Name}.include", FileOpenMode.Write);
 
             var writer = new Yarhl.IO.TextWriter(includeFile);
-            foreach (var includePath in ReplacedFormats.Keys)
+            foreach (var includePath in replacedFormats.Keys)
             {
                 writer.WriteLine(includePath);
             }
@@ -87,8 +88,9 @@ internal class ProjectManager
         Directory.SetCurrentDirectory(Project);
 
 
-        IncludedStreams = new Dictionary<string, DataStream>();
-        ReplacedFormats = new Dictionary<string, ParFile>();
+        includedNodes = new List<Node>();
+        includedStreams = new Dictionary<string, DataStream>();
+        replacedFormats = new Dictionary<string, ParFile>();
 
         if (File.Exists($"{Name}.include"))
         {
@@ -105,12 +107,11 @@ internal class ProjectManager
                     continue;
                 }
 
-                using var fileStream = DataStreamFactory.FromFile(absoluteIncludePath, FileOpenMode.Read);
-                var newStream = DataStreamFactory.FromMemory();
-                fileStream.WriteTo(newStream);
+                var newStream = Program.CopyStreamFromFile(absoluteIncludePath, FileOpenMode.Read);
 
-                IncludedStreams.Add(includePath, newStream);
-                ReplacedFormats.Add(includePath, oldFormat);
+                includedNodes.Add(file);
+                includedStreams.Add(includePath, newStream);
+                replacedFormats.Add(includePath, oldFormat);
 
                 var newFormat = new ParFile(newStream)
                 {
@@ -159,14 +160,14 @@ internal class ProjectManager
 
     public static void IncludeFile(Node file)
     {
-        if (IncludedStreams.ContainsKey(file.Path))
-            IncludedStreams.Remove(file.Path);
+        if (includedStreams.ContainsKey(file.Path))
+            includedStreams.Remove(file.Path);
 
         ParFile oldFormat;
-        if (ReplacedFormats.ContainsKey(file.Path))
+        if (replacedFormats.ContainsKey(file.Path))
         {
-            oldFormat = ReplacedFormats[file.Path];
-            ReplacedFormats.Remove(file.Path);
+            oldFormat = replacedFormats[file.Path];
+            replacedFormats.Remove(file.Path);
         }
         else
         {
@@ -175,8 +176,9 @@ internal class ProjectManager
 
         var newStream = file.GetFormatAs<RGGFormat>().AsBinStream();
 
-        IncludedStreams.Add(file.Path, newStream);
-        ReplacedFormats.Add(file.Path, oldFormat);
+        includedNodes.Add(file);
+        includedStreams.Add(file.Path, newStream);
+        replacedFormats.Add(file.Path, oldFormat);
 
         var newFormat = new ParFile(newStream)
         {
@@ -195,6 +197,17 @@ internal class ProjectManager
         newStream.WriteTo($"{Project}{file.Path}/{file.Name}");
 
         // .include file will be written to on close, not here.
+    }
+
+    public static void ExcludeFile(Node file)
+    {
+        var oldFormat = replacedFormats[file.Path];
+
+        file.ChangeFormat(oldFormat, disposePreviousFormat: true);
+
+        includedNodes.Remove(file);
+        includedStreams.Remove(file.Path);
+        replacedFormats.Remove(file.Path);
     }
 }
 
