@@ -1,4 +1,4 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,12 +26,11 @@ namespace ParBoil.RGGFormats
         internal abstract Control Handle { get; set; }
         internal abstract List<Control> EditedControls { get; set; }
 
-        internal bool Loaded = false;
-
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
 
         public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
+        public abstract void UpdateControls();
         public abstract void ResizeAll(Size size);
         public abstract void Resize();
 

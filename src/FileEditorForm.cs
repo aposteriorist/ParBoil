@@ -2,6 +2,7 @@ using ParBoil.RGGFormats;
 using ParLibrary;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -36,8 +37,11 @@ namespace ParBoil
 
             Directory.SetCurrentDirectory(WorkingFolder);
 
-            if (!file.Loaded)
+
+            if (!node.Tags.ContainsKey("LoadedVersions"))
             {
+                node.Tags["LoadedVersions"] = new Dictionary<string, DataStream>();
+
                 if (WorkingEnvironmentExists())
                 {
                     LoadWorkingEnvironment();
@@ -48,8 +52,11 @@ namespace ParBoil
                     CreateWorkingEnvironment();
                 }
             }
+            else
+            {
+                PopulateVersionSelector();
+            }
 
-            Controls.Clear();
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
             Controls.Add(file.Handle);
 
@@ -60,29 +67,43 @@ namespace ParBoil
         private readonly RGGFormat file;
         private readonly string WorkingFolder;
 
-        private readonly string current = "current.json";
+        private readonly string original = "Original.json";
 
         private readonly Color EditableColor = Color.FromArgb(45, 45, 45);
         private readonly Font EditorFont = new Font("MS Mincho", 18, FontStyle.Regular);
 
 
-        private void WriteFileAsJSON(string jsoname)
+        private DataStream WriteFileAsJSON(string jsoname)
         {
+            var jsonStream = file.ToJSONStream();
+
             if (!File.Exists(jsoname))
-                file.ToJSONStream().WriteTo(jsoname);
+                jsonStream.WriteTo(jsoname);
+
+            return jsonStream;
         }
 
-        private void SaveNewVersion()
+        private void SaveNewVersion(string name = "", bool selectNewVersion = true)
         {
             file.ProcessEdits();
+            UpdateTitle();
 
-            uint count = 0;
-            foreach (string file in Directory.GetFiles(WorkingFolder))
-                if (file[^12..].StartsWith("ver"))
-                    count++;
+            if (name == "")
+            {
+                int count = Directory.GetFiles(WorkingFolder, "*.json").Length;
 
-            File.Move(current, String.Format("ver{0:D4}.json", count), false);
-            WriteFileAsJSON(current);
+                name = $"Version {count}";
+            }
+
+            tS_VersionSelector.Items.Insert(0, name);
+            node.Tags["LoadedVersions"][name] = WriteFileAsJSON($"{name}.json");
+
+            if (selectNewVersion)
+            {
+                node.Tags["SelectedVersion"] = name;
+
+                tS_VersionSelector.SelectedIndex = 0;
+            }
         }
 
         private void LoadVersion(uint version)
@@ -95,20 +116,54 @@ namespace ParBoil
                 using var json = DataStreamFactory.FromFile(name, FileOpenMode.Read);
 
                 file.LoadFromJSON(json);
+                file.UpdateControls();
             }
         }
 
+        private void PopulateVersionSelector()
+        {
+            foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
+                tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
 
         private void CreateWorkingEnvironment() => WriteFileAsJSON(current);
+            tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
+        }
+
+
+        private void CreateWorkingEnvironment()
+        {
+            tS_VersionSelector.Items.Add(original[..^5]);
+
+            node.Tags["LoadedVersions"][original[..^5]] = WriteFileAsJSON(original);
+            node.Tags["SelectedVersion"] = original[..^5];
+
+            tS_VersionSelector.SelectedIndex = 0;
+        }
 
         private void LoadWorkingEnvironment()
         {
-            using var json = DataStreamFactory.FromFile(current, FileOpenMode.Read);
+            // Instead of loading current.json, I want to load the most-recently created file.
+            string mostRecentFile = null;
+            foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
+            {
+                mostRecentFile ??= filename;
+                tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
+            }
+
+            using var json = DataStreamFactory.FromFile(mostRecentFile, FileOpenMode.Read);
 
             file.LoadFromJSON(json);
+
+            var jsonCopy = DataStreamFactory.FromMemory();
+            json.WriteTo(jsonCopy);
+
+            node.Tags["SelectedVersion"] = (string)tS_VersionSelector.Items[0];
+            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = jsonCopy;
+
+            tS_VersionSelector.SelectedIndex = 0;
         }
 
-        private bool WorkingEnvironmentExists() => File.Exists(current);
+        private bool WorkingEnvironmentExists() => File.Exists(original);
 
 
         public void UpdateTitle()
@@ -120,9 +175,12 @@ namespace ParBoil
                     Text += '*';
                 }
                 else if (file.EditedControls.Count == 0 && Text[^1] == '*')
+                {
                     Text = Text[..^1];
+                }
             }
         }
+
 
         private void FileEditorForm_Activated(object sender, EventArgs e)
         {
@@ -145,11 +203,11 @@ namespace ParBoil
                     {
                         SaveNewVersion();
                         PM.IncludeFile(node); // Automatic for now
-
-                        // The format's stream is the node's stream, so having edited it in RGGFormat.WriteToBin means that job's done.
-
-                // When that's done, generate a makeshift dropdown version selector. Just put it on a little generated form, for now.
-                // The generated form should move when the editor moves, and close when it closes.
+                    }
+                    else
+                    {
+                        // Nothing needs to be done. Controls are generated anew on form's open.
+                        //file.EditedControls.Clear();
                     }
 
                     Directory.SetCurrentDirectory(PM.Project);
@@ -158,5 +216,31 @@ namespace ParBoil
         }
 
         private void FileEditorForm_Resize(object sender, EventArgs e) => file.Resize();
+
+        private void tS_VersionSelector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!node.Tags.ContainsKey("SelectedVersion") || tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]))
+            {
+                if (file.EditedControls != null && file.EditedControls.Count > 0)
+                {
+                    // Do you want to save?
+                    SaveNewVersion(selectNewVersion: false);
+                }
+
+                node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
+
+                if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
+                {
+                    using var json = DataStreamFactory.FromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
+                    var jsonCopy = DataStreamFactory.FromMemory();
+                    json.WriteTo(jsonCopy);
+
+                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = jsonCopy;
+                }
+
+                file.LoadFromJSON(node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]]);
+                file.UpdateControls();
+            }
+        }
     }
 }

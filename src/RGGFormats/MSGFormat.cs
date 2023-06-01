@@ -1,4 +1,4 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System;
 using System.Composition;
 using System.Diagnostics;
@@ -207,12 +207,12 @@ namespace ParBoil.RGGFormats
                 reader.Stream.PopPosition();
                 reader.Stream.Position += 6;
             }
-
-            Loaded = true;
         }
 
         public override void LoadFromJSON(DataStream jsonStream)
         {
+            jsonStream.Position = 0;
+
             byte[] json = new byte[jsonStream.Length];
             jsonStream.Read(json, 0, (int)jsonStream.Length);
 
@@ -263,8 +263,9 @@ namespace ParBoil.RGGFormats
             DecompressedSize = msg.DecompressedSize;
             Attributes = msg.Attributes;
             Timestamp = msg.Timestamp;
+        }
 
-            Loaded = true;
+        public override RGGFormat FormatFromJSON(DataStream jsonStream)
         }
 
         public override string ToJSONString()
@@ -290,6 +291,63 @@ namespace ParBoil.RGGFormats
             //byte[] json = JsonSerializer.SerializeToUtf8Bytes(new object[2] { misc, sections }, opts);
             byte[] json = JsonSerializer.SerializeToUtf8Bytes(this, opts);
             return DataStreamFactory.FromArray(json, 0, json.Length);
+        }
+
+        public override void UpdateControls()
+        {
+            var topTabs = (TabControl)Handle;
+
+            uint s = 0;
+            foreach (TabPage sectionTab in topTabs.TabPages)
+            {
+                if (s == 0)
+                {
+                    var mp = (FlowLayoutPanel)sectionTab.Controls[0];
+                    for (int m = 0; m < Misc.Length; m++)
+                    {
+                        var panel = (FlowLayoutPanel)mp.Controls[m];
+                        panel.Controls[1].Text = Misc[m].Import;
+                    }
+                }
+
+                else
+                {
+                    var tabs = (TabControl)sectionTab.Controls[0];
+                    uint h = 0;
+                    foreach (TabPage headerTab in tabs.TabPages)
+                    {
+                        // Size the same as in GenerateControls
+                        var mp = (FlowLayoutPanel)headerTab.Controls[0];
+
+                        uint m = 0;
+                        foreach (FlowLayoutPanel panel in mp.Controls)
+                        {
+                            var message = Sections[s-1].Headers[h].Messages[m];
+                            var importPanel = panel.Controls[2];
+                            RichTextBox textImport;
+                            if (message.SpeakerIndex >= 0)
+                            {
+                                importPanel.Controls[0].Text = Misc[message.SpeakerIndex].Import;
+                                textImport = (RichTextBox)importPanel.Controls[1];
+                            }
+                            else
+                                textImport = (RichTextBox)importPanel.Controls[0];
+
+                            InitializeText(textImport, message, import: true);
+                            importPanel.Tag = textImport.Text;
+
+                            m++;
+                        }
+
+                        h++;
+                    }
+                }
+
+                s++;
+            }
+
+            EditedControls.Clear();
+            topTabs.Refresh();
         }
 
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
