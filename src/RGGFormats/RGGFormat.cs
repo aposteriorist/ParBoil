@@ -1,9 +1,10 @@
-using ParLibrary;
+﻿using ParLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Yarhl.FileFormat;
 using Yarhl.IO;
 
 namespace ParBoil.RGGFormats
@@ -23,11 +24,12 @@ namespace ParBoil.RGGFormats
             //EditedControls = new List<Control>();
         }
 
-        internal abstract Control Handle { get; set; }
-        internal abstract List<Control> EditedControls { get; set; }
+        internal Control Handle { get; set; }
+        internal List<Control> EditedControls { get; set; }
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
+        public abstract RGGFormat CopyFormat();
 
         public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
         public abstract void UpdateControls();

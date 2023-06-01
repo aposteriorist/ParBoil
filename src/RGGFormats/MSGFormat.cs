@@ -1,4 +1,4 @@
-using ParLibrary;
+﻿using ParLibrary;
 using System;
 using System.Composition;
 using System.Diagnostics;
@@ -20,9 +20,6 @@ namespace ParBoil.RGGFormats
         public MSGFormat() : base() { }
         public MSGFormat(DataStream stream) : base(stream) { }
         public MSGFormat(DataStream stream, long offset, long length) : base(stream, offset, length) { }
-
-        internal override Control Handle { get; set; }
-        internal override List<Control> EditedControls { get; set; }
 
         public Section[] Sections { get; set; }
         public MiscEntry[] Misc { get; set; }
@@ -265,7 +262,32 @@ namespace ParBoil.RGGFormats
             Timestamp = msg.Timestamp;
         }
 
-        public override RGGFormat FormatFromJSON(DataStream jsonStream)
+        public override MSGFormat CopyFormat()
+        {
+            // To-Do: Change Stream here to AsBinStream() to facilitate swap-in-swap-out behaviour with Include.
+            var msg = new MSGFormat(Stream)
+            {
+                // ParFile
+                CanBeCompressed = this.CanBeCompressed,
+                IsCompressed = this.IsCompressed,
+                WasCompressed = this.WasCompressed,
+                CompressionVersion = this.CompressionVersion,
+                DecompressedSize = this.DecompressedSize,
+                Attributes = this.Attributes,
+                Timestamp = this.Timestamp,
+
+                // MSGFormat
+                Misc = new MiscEntry[this.Misc.Length],
+                Sections = new Section[this.Sections.Length],
+
+                EditedControls = new List<Control>(),
+                Handle = this.Handle, // Temp
+            };
+
+            Array.Copy(Misc, msg.Misc, Misc.Length);
+            Array.Copy(Sections, msg.Sections, Sections.Length);
+
+            return msg;
         }
 
         public override string ToJSONString()
