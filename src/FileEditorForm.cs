@@ -69,8 +69,6 @@ namespace ParBoil
         private RGGFormat file;
         private readonly string WorkingFolder;
 
-        private readonly string original = "Original";
-
         private readonly Color EditableColor = Color.FromArgb(45, 45, 45);
         private readonly Font EditorFont = new Font("MS Mincho", 18, FontStyle.Regular);
 
@@ -87,7 +85,7 @@ namespace ParBoil
 
         private void SaveNewVersion(string name = "", bool selectNewVersion = true)
         {
-            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat();
+            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat(duplicateStream: true);
 
             file.ProcessEdits();
             UpdateTitle();
@@ -129,18 +127,17 @@ namespace ParBoil
             foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
                 tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
 
-            //tS_VersionSelector.SelectedIndex = tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]);
             tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
         }
 
 
         private void CreateWorkingEnvironment()
         {
-            tS_VersionSelector.Items.Add(original);
+            tS_VersionSelector.Items.Add(PM.Original);
 
-            WriteFileAsJSON(original + ".json");
+            WriteFileAsJSON(PM.Original + ".json");
 
-            node.Tags["SelectedVersion"] = original;
+            node.Tags["SelectedVersion"] = PM.Original;
 
             tS_VersionSelector.SelectedIndex = 0;
         }
@@ -164,7 +161,7 @@ namespace ParBoil
             tS_VersionSelector.SelectedIndex = 0;
         }
 
-        private bool WorkingEnvironmentExists() => File.Exists(original + ".json");
+        private bool WorkingEnvironmentExists() => File.Exists(PM.Original + ".json");
 
 
         public void UpdateTitle()
@@ -203,14 +200,15 @@ namespace ParBoil
                 {
                     if (result == DialogResult.Yes)
                     {
-                        SaveNewVersion();
-                        //PM.IncludeFile(node); // Automatic for now
+                        SaveNewVersion(); // Automatic name for now
+                        file.UpdateStream(overwrite: true);
+                        PM.IncludeFile(node, file); // Automatic for now
+                        node.Tags["IncludedVersion"] = tS_VersionSelector.SelectedItem;
                     }
                     else
                     {
                         // Controls are no longer regenerated on editor open.
                         // Currently, then, the edits remain, just unsaved.
-                        //file.EditedControls.Clear();
                     }
 
                     Directory.SetCurrentDirectory(PM.Project);
@@ -234,11 +232,8 @@ namespace ParBoil
                 }
                 else if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
                 {
-                    //var previousVersion = file.CopyFormat();
-                    //previousVersion.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
-                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat();
+                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat(duplicateStream: true);
                 }
-
 
                 node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
 
@@ -250,10 +245,11 @@ namespace ParBoil
                 else
                 {
                     file = node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]];
-                    node.ChangeFormat(file, disposePreviousFormat: false);
                 }
 
                 file.UpdateControls();
+
+                tSSB_Include.Enabled = tS_VersionSelector.SelectedItem != PM.Original;
             }
         }
     }

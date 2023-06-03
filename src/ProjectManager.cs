@@ -12,6 +12,7 @@ using System.Diagnostics;
 using Yarhl.FileFormat;
 using ParLibrary.Sllz;
 using ParBoil.RGGFormats;
+using System.Xml.Linq;
 
 namespace ParBoil;
 
@@ -21,12 +22,12 @@ internal class ProjectManager
     public static string Project;
     public static string Name;
 
+    internal static readonly string Original = "Original";
+
     private static ParArchiveReaderParameters readerParams;
     private static ParArchiveWriterParameters writerParams;
 
     private static List<Node> includedNodes;
-    private static Dictionary<string, DataStream> includedStreams;
-    private static Dictionary<string, ParFile> replacedFormats;
 
     public static void Initialize()
     {
@@ -39,16 +40,16 @@ internal class ProjectManager
 
     public static void Close()
     {
-        if (replacedFormats != null && replacedFormats.Count > 0)
+        if (includedNodes != null && includedNodes.Count > 0)
         {
             Directory.SetCurrentDirectory(Project);
 
             using var includeFile = DataStreamFactory.FromFile($"{Name}.include", FileOpenMode.Write);
 
             var writer = new Yarhl.IO.TextWriter(includeFile);
-            foreach (var includePath in replacedFormats.Keys)
+            foreach (var node in includedNodes)
             {
-                writer.WriteLine(includePath);
+                writer.WriteLine($"{node.Path}:{node.Tags["IncludedVersion"]}");
             }
         }
 
@@ -89,16 +90,15 @@ internal class ProjectManager
 
 
         includedNodes = new List<Node>();
-        includedStreams = new Dictionary<string, DataStream>();
-        replacedFormats = new Dictionary<string, ParFile>();
 
         if (File.Exists($"{Name}.include"))
         {
             var inclusions = File.ReadLines($"{Name}.include");
             foreach (string includePath in inclusions)
             {
-                var file = Navigator.SearchNode(Par, includePath);
-                var oldFormat = file.GetFormatAs<ParFile>();
+                var split = includePath.Split(':');
+                var file = Navigator.SearchNode(Par, split[0]);
+                file.Tags["IncludedVersion"] = split[1];
 
                 string absoluteIncludePath = $"{Project}{file.Path}/{file.Name}";
 
@@ -107,12 +107,19 @@ internal class ProjectManager
                     continue;
                 }
 
-                var newStream = Program.CopyStreamFromFile(absoluteIncludePath, FileOpenMode.Read);
-
                 includedNodes.Add(file);
-                includedStreams.Add(includePath, newStream);
-                replacedFormats.Add(includePath, oldFormat);
 
+                if (file.GetFormatAs<ParFile>().IsCompressed)
+                    file.TransformWith<Decompressor>();
+
+                RGGFormat.TransformToRGGFormat(file);
+
+                var oldFormat = file.GetFormatAs<RGGFormat>();
+
+                file.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
+                file.Tags["LoadedVersions"][Original] = oldFormat;
+
+                var newStream = Program.CopyStreamFromFile(absoluteIncludePath, FileOpenMode.Read);
                 var newFormat = new ParFile(newStream)
                 {
                     CanBeCompressed = true,
@@ -158,56 +165,36 @@ internal class ProjectManager
                 n.Stream.WriteTo(path + n.Path + n.Name);
     }
 
-    public static void IncludeFile(Node file)
+    public static void IncludeFile(Node file, ParFile newFormat)
     {
-        if (includedStreams.ContainsKey(file.Path))
-            includedStreams.Remove(file.Path);
-
-        ParFile oldFormat;
-        if (replacedFormats.ContainsKey(file.Path))
+        if (!file.Tags.ContainsKey("LoadedVersions"))
         {
-            oldFormat = replacedFormats[file.Path];
-            replacedFormats.Remove(file.Path);
-        }
-        else
-        {
-            oldFormat = file.GetFormatAs<ParFile>();
+            file.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
         }
 
-        var newStream = file.GetFormatAs<RGGFormat>().AsBinStream();
+        if (!file.Tags["LoadedVersions"].ContainsKey(Original))
+            file.Tags["LoadedVersions"][Original] = file.Format;
 
-        includedNodes.Add(file);
-        includedStreams.Add(file.Path, newStream);
-        replacedFormats.Add(file.Path, oldFormat);
-
-        var newFormat = new ParFile(newStream)
-        {
-            CanBeCompressed = true,
-            IsCompressed = false,
-            WasCompressed = oldFormat.WasCompressed,
-            CompressionVersion = oldFormat.CompressionVersion,
-            DecompressedSize = (uint)newStream.Length,
-            Attributes = oldFormat.Attributes,
-            Timestamp = oldFormat.Timestamp,
-        };
+        if (!includedNodes.Contains(file))
+            includedNodes.Add(file);
 
         file.ChangeFormat(newFormat, disposePreviousFormat: false);
 
         // Write the modified stream out to disk as a file, to be loaded from if need be.
-        newStream.WriteTo($"{Project}{file.Path}/{file.Name}");
+        newFormat.Stream.WriteTo($"{Project}{file.Path}/{file.Name}");
 
         // .include file will be written to on close, not here.
     }
 
     public static void ExcludeFile(Node file)
     {
-        var oldFormat = replacedFormats[file.Path];
+        if (file.Tags.ContainsKey("LoadedVersions") && file.Tags["LoadedVersions"].ContainsKey(Original))
+        {
+            file.ChangeFormat(file.Tags["LoadedVersions"][Original], disposePreviousFormat: false);
 
-        file.ChangeFormat(oldFormat, disposePreviousFormat: true);
-
-        includedNodes.Remove(file);
-        includedStreams.Remove(file.Path);
-        replacedFormats.Remove(file.Path);
+            includedNodes.Remove(file);
+        }
+        // Hitting else is an error.
     }
 }
 

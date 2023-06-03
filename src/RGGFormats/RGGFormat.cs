@@ -1,10 +1,12 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Yarhl.FileFormat;
+using Yarhl.FileSystem;
 using Yarhl.IO;
 
 namespace ParBoil.RGGFormats
@@ -29,7 +31,7 @@ namespace ParBoil.RGGFormats
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
-        public abstract RGGFormat CopyFormat();
+        public abstract RGGFormat CopyFormat(bool duplicateStream = false);
 
         public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
         public abstract void UpdateControls();
@@ -38,9 +40,25 @@ namespace ParBoil.RGGFormats
 
         public abstract void ProcessEdits();
         public abstract void RevertEdits();
-        public abstract DataStream AsBinStream(bool overwrite = false);
+        public abstract DataStream UpdateStream(bool overwrite = false);
         public abstract DataStream ToJSONStream();
         public abstract string ToJSONString();
         public abstract void FormClosing();
+
+        public static void TransformToRGGFormat(Node file)
+        {
+            if (file.Format is RGGFormat)
+            {
+                return;
+            }
+
+            switch (file.Name[^4..])
+            {
+                case ".msg":
+                    if (file.Format is not MSGFormat)
+                        file.TransformWith<MSGFormat>();
+                    break;
+            }
+        }
     }
 }

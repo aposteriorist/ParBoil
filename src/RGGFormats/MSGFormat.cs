@@ -262,10 +262,18 @@ namespace ParBoil.RGGFormats
             Timestamp = msg.Timestamp;
         }
 
-        public override MSGFormat CopyFormat()
+        public override MSGFormat CopyFormat(bool duplicateStream = true)
         {
-            // To-Do: Change Stream here to AsBinStream() to facilitate swap-in-swap-out behaviour with Include.
-            var msg = new MSGFormat(Stream)
+            DataStream copyStream;
+            if (duplicateStream)
+            {
+                copyStream = DataStreamFactory.FromMemory();
+                Stream.WriteTo(copyStream);
+            }
+            else
+                copyStream = Stream;
+
+            var msg = new MSGFormat(copyStream)
             {
                 // ParFile
                 CanBeCompressed = this.CanBeCompressed,
@@ -440,8 +448,8 @@ namespace ParBoil.RGGFormats
                     Font = formFont,
                     Text = Misc[m].Import,
                     Multiline = false,
-                    Margin = new Padding(15,0,3,0),
-                    Tag = m,             
+                    Margin = new Padding(15, 0, 3, 0),
+                    Tag = m,
                 };
                 import.LostFocus += delegate
                 {
@@ -817,7 +825,7 @@ namespace ParBoil.RGGFormats
         public override void FormClosing()
         {
             ProcessEdits();
-            AsBinStream();
+            UpdateStream();
         }
 
         public override void ProcessEdits()
@@ -985,7 +993,7 @@ namespace ParBoil.RGGFormats
             }
         }
 
-        public override DataStream AsBinStream(bool overwrite = false)
+        public override DataStream UpdateStream(bool overwrite = false)
         {
             DataWriter writer;
             if (overwrite)
