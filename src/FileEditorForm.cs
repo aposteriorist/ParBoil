@@ -59,6 +59,8 @@ namespace ParBoil
                 PopulateVersionSelector();
             }
 
+            tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
+
             Controls.Add(file.Handle);
             UpdateTitle();
         }
@@ -222,7 +224,8 @@ namespace ParBoil
 
         private void tS_VersionSelector_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (!node.Tags.ContainsKey("SelectedVersion") || tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]))
+            // (!node.Tags.ContainsKey("SelectedVersion") should be an error if it occurs here.
+            if (tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]))
             {
                 if (file.EditedControls != null && file.EditedControls.Count > 0)
                 {

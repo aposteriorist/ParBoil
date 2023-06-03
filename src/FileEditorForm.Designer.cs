@@ -134,6 +134,7 @@
             // 
             // tS_VersionSelector
             // 
+            tS_VersionSelector.Enabled = false;
             tS_VersionSelector.MaxDropDownItems = 16;
             tS_VersionSelector.Name = "tS_VersionSelector";
             tS_VersionSelector.Size = new Size(121, 25);
