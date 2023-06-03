@@ -38,7 +38,7 @@ namespace ParBoil
             Directory.SetCurrentDirectory(WorkingFolder);
 
 
-            if (!node.Tags.ContainsKey("LoadedVersions"))
+            if (!node.Tags.ContainsKey("SelectedVersion"))
             {
                 node.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
 
@@ -53,8 +53,6 @@ namespace ParBoil
                 }
 
                 file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
-
-                node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat();
             }
             else
             {
@@ -87,6 +85,8 @@ namespace ParBoil
 
         private void SaveNewVersion(string name = "", bool selectNewVersion = true)
         {
+            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat();
+
             file.ProcessEdits();
             UpdateTitle();
 
@@ -99,7 +99,6 @@ namespace ParBoil
 
             tS_VersionSelector.Items.Insert(0, name);
             WriteFileAsJSON($"{name}.json");
-            node.Tags["LoadedVersions"][name] = file.CopyFormat();
 
             if (selectNewVersion)
             {
@@ -227,9 +226,16 @@ namespace ParBoil
             {
                 if (file.EditedControls != null && file.EditedControls.Count > 0)
                 {
-                    // Do you want to save?
+                    // Do you want to save your changes as a new version automatically?
                     SaveNewVersion(selectNewVersion: false);
                 }
+                else if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
+                {
+                    //var previousVersion = file.CopyFormat();
+                    //previousVersion.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat();
+                }
+
 
                 node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
 
@@ -237,12 +243,12 @@ namespace ParBoil
                 {
                     var json = Program.CopyStreamFromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
                     file.LoadFromJSON(json);
-
-                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat();
                 }
-
-                file = node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]];
-                node.ChangeFormat(file, disposePreviousFormat: false);
+                else
+                {
+                    file = node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]];
+                    node.ChangeFormat(file, disposePreviousFormat: false);
+                }
 
                 file.UpdateControls();
             }
