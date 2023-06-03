@@ -128,7 +128,7 @@ namespace ParBoil
             foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
                 tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
 
-        private void CreateWorkingEnvironment() => WriteFileAsJSON(current);
+            //tS_VersionSelector.SelectedIndex = tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]);
             tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
         }
 
@@ -136,9 +136,6 @@ namespace ParBoil
         private void CreateWorkingEnvironment()
         {
             tS_VersionSelector.Items.Add(original);
-
-            node.Tags["LoadedVersions"][original[..^5]] = WriteFileAsJSON(original);
-            node.Tags["SelectedVersion"] = original[..^5];
 
             WriteFileAsJSON(original + ".json");
 
@@ -162,7 +159,6 @@ namespace ParBoil
             file.LoadFromJSON(json);
 
             node.Tags["SelectedVersion"] = (string)tS_VersionSelector.Items[0];
-            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = json;
 
             tS_VersionSelector.SelectedIndex = 0;
         }
