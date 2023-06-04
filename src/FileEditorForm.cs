@@ -1,18 +1,6 @@
 using ParBoil.RGGFormats;
-using ParLibrary;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using Yarhl.FileSystem;
 using Yarhl.IO;
 
@@ -57,6 +45,22 @@ namespace ParBoil
             else
             {
                 PopulateVersionSelector();
+
+                if (node.Tags.ContainsKey("IncludedVersion"))
+                {
+                    if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["IncludedVersion"]))
+                    {
+                        LoadVersion(node.Tags["IncludedVersion"]);
+
+                        node.Tags["LoadedVersions"][PM.Original].GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+
+                        file.Handle = node.Tags["LoadedVersions"][PM.Original].Handle;
+                        file.EditedControls = new List<Control>();
+
+                        file.UpdateControls();
+                        node.Tags["LoadedVersions"][node.Tags["IncludedVersion"]] = file;
+                    }
+                }
             }
 
             tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
@@ -108,17 +112,15 @@ namespace ParBoil
             }
         }
 
-        private void LoadVersion(uint version)
+        private void LoadVersion(string version)
         {
-            // Currently ignores all consequences of loading.
-            string name = String.Format("ver{0:D4}.json", version);
+            string name = version + ".json";
 
             if (File.Exists(name))
             {
                 using var json = DataStreamFactory.FromFile(name, FileOpenMode.Read);
 
                 file.LoadFromJSON(json);
-                file.UpdateControls();
             }
         }
 

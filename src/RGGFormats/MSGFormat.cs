@@ -1,16 +1,10 @@
 ﻿using ParLibrary;
-using System;
-using System.Composition;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Unicode;
 using Yarhl.FileFormat;
-using Yarhl.FileSystem;
 using Yarhl.IO;
 
 namespace ParBoil.RGGFormats
@@ -336,7 +330,7 @@ namespace ParBoil.RGGFormats
                     for (int m = 0; m < Misc.Length; m++)
                     {
                         var panel = (FlowLayoutPanel)mp.Controls[m];
-                        panel.Controls[1].Text = Misc[m].Import;
+                        panel.Tag = panel.Controls[1].Text = Misc[m].Import;
                     }
                 }
 
@@ -469,8 +463,8 @@ namespace ParBoil.RGGFormats
                     {
                         if (EditedControls.Contains(import)) EditedControls.Remove(import);
                     }
-                    Debug.WriteLine($"Number of edits: {EditedControls.Count}");
-                    ((FileEditorForm)import.FindForm()).UpdateTitle();
+
+                    if (import.FindForm() is FileEditorForm form) form.UpdateTitle();
                 };
 
                 panel.Controls.Add(export);
@@ -632,8 +626,8 @@ namespace ParBoil.RGGFormats
                             {
                                 if (EditedControls.Contains(textImport)) EditedControls.Remove(textImport);
                             }
-                            Debug.WriteLine($"Number of edits: {EditedControls.Count}");
-                            ((FileEditorForm)textImport.FindForm()).UpdateTitle();
+
+                            if (textImport.FindForm() is FileEditorForm form) form.UpdateTitle();
                         };
                         importPanel.Controls.Add(textImport);
 

@@ -98,16 +98,15 @@ internal class ProjectManager
             {
                 var split = includePath.Split(':');
                 var file = Navigator.SearchNode(Par, split[0]);
-                file.Tags["IncludedVersion"] = split[1];
+                file.Tags["IncludedVersion"] = file.Tags["SelectedVersion"] = split[1];
 
-                string absoluteIncludePath = $"{Project}{file.Path}/{file.Name}";
+                string includedFile = $"{Project}{file.Path}/{file.Name}";
+                string originalJSON = $"{Project}{file.Path}/{Original}.json";
 
-                if (!File.Exists(absoluteIncludePath))
+                if (!File.Exists(includedFile) || !File.Exists(originalJSON))
                 {
                     continue;
                 }
-
-                includedNodes.Add(file);
 
                 if (file.GetFormatAs<ParFile>().IsCompressed)
                     file.TransformWith<Decompressor>();
@@ -116,10 +115,15 @@ internal class ProjectManager
 
                 var oldFormat = file.GetFormatAs<RGGFormat>();
 
+                using var json = DataStreamFactory.FromFile(originalJSON, FileOpenMode.Read);
+                oldFormat.LoadFromJSON(json);
+
                 file.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
                 file.Tags["LoadedVersions"][Original] = oldFormat;
 
-                var newStream = Program.CopyStreamFromFile(absoluteIncludePath, FileOpenMode.Read);
+                includedNodes.Add(file);
+
+                var newStream = Program.CopyStreamFromFile(includedFile, FileOpenMode.Read);
                 var newFormat = new ParFile(newStream)
                 {
                     CanBeCompressed = true,
