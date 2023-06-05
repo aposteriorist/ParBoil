@@ -49,6 +49,8 @@ namespace ParBoil
 
                     PopulateVersionSelector();
                     LoadVersion(node.Tags["IncludedVersion"]);
+                    node.Tags["SelectedVersion"] = node.Tags["IncludedVersion"];
+                    tS_VersionSelector.SelectedItem = node.Tags["IncludedVersion"];
                 }
 
                 file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
@@ -136,9 +138,6 @@ namespace ParBoil
             {
                 using var json = DataStreamFactory.FromFile(name, FileOpenMode.Read);
                 file.LoadFromJSON(json);
-
-                node.Tags["SelectedVersion"] = version;
-                tS_VersionSelector.SelectedItem = version;
             }
         }
 
@@ -263,8 +262,8 @@ namespace ParBoil
 
                 if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
                 {
-                    var json = Program.CopyStreamFromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
-                    file.LoadFromJSON(json);
+                    LoadVersion(node.Tags["SelectedVersion"]);
+
                     respondToEdits = false;
                     file.UpdateControls();
                     respondToEdits = true;
