@@ -30,9 +30,12 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FileEditorForm));
             toolStripControls = new ToolStrip();
-            tS_NewVersion = new ToolStripSplitButton();
+            tS_SaveVersion = new ToolStripSplitButton();
+            tS_SaveVersion_AsNewVersion = new ToolStripMenuItem();
+            tS_SaveNewVersion_DefaultName = new ToolStripMenuItem();
+            tS_SaveNewVersion_WithName = new ToolStripMenuItem();
+            tS_SaveVersion_Overwrite = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
-            tS_SaveVersion = new ToolStripButton();
             toolStripSeparator2 = new ToolStripSeparator();
             tS_Include = new ToolStripSplitButton();
             tS_Include_CurrentVersion = new ToolStripMenuItem();
@@ -42,8 +45,6 @@
             toolStripSeparator4 = new ToolStripSeparator();
             tS_Revert = new ToolStripButton();
             tS_VersionSelector = new ToolStripComboBox();
-            tS_NewVersion_AutoName = new ToolStripMenuItem();
-            tS_NewVersion_ChooseName = new ToolStripMenuItem();
             toolStripControls.SuspendLayout();
             SuspendLayout();
             // 
@@ -52,42 +53,55 @@
             toolStripControls.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             toolStripControls.Dock = DockStyle.None;
             toolStripControls.GripStyle = ToolStripGripStyle.Hidden;
-            toolStripControls.Items.AddRange(new ToolStripItem[] { tS_NewVersion, toolStripSeparator1, tS_SaveVersion, toolStripSeparator2, tS_Include, toolStripSeparator3, tS_Exclude, toolStripSeparator4, tS_Revert, tS_VersionSelector });
+            toolStripControls.Items.AddRange(new ToolStripItem[] { tS_SaveVersion, toolStripSeparator1, tS_Include, toolStripSeparator2, tS_Exclude, toolStripSeparator3, tS_Revert, toolStripSeparator4, tS_VersionSelector });
             toolStripControls.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
             toolStripControls.Location = new Point(-1, 1337);
             toolStripControls.Name = "toolStripControls";
             toolStripControls.RenderMode = ToolStripRenderMode.Professional;
-            toolStripControls.Size = new Size(623, 25);
+            toolStripControls.Size = new Size(568, 25);
             toolStripControls.TabIndex = 0;
             toolStripControls.Text = "toolStrip1";
             // 
-            // tS_NewVersion
+            // tS_SaveVersion
             // 
-            tS_NewVersion.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            tS_NewVersion.DropDownItems.AddRange(new ToolStripItem[] { tS_NewVersion_AutoName, tS_NewVersion_ChooseName });
-            tS_NewVersion.Enabled = false;
-            tS_NewVersion.ForeColor = SystemColors.MenuText;
-            tS_NewVersion.Image = (Image)resources.GetObject("tS_NewVersion.Image");
-            tS_NewVersion.ImageTransparentColor = Color.Magenta;
-            tS_NewVersion.Name = "tS_NewVersion";
-            tS_NewVersion.Size = new Size(88, 22);
-            tS_NewVersion.Text = "New Version";
+            tS_SaveVersion.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            tS_SaveVersion.DropDownItems.AddRange(new ToolStripItem[] { tS_SaveVersion_AsNewVersion, tS_SaveVersion_Overwrite });
+            tS_SaveVersion.ForeColor = SystemColors.MenuText;
+            tS_SaveVersion.Image = (Image)resources.GetObject("tS_SaveVersion.Image");
+            tS_SaveVersion.ImageTransparentColor = Color.Magenta;
+            tS_SaveVersion.Name = "tS_SaveVersion";
+            tS_SaveVersion.Size = new Size(88, 22);
+            tS_SaveVersion.Text = "Save Version";
+            // 
+            // tS_SaveVersion_AsNewVersion
+            // 
+            tS_SaveVersion_AsNewVersion.DropDownItems.AddRange(new ToolStripItem[] { tS_SaveNewVersion_DefaultName, tS_SaveNewVersion_WithName });
+            tS_SaveVersion_AsNewVersion.Name = "tS_SaveVersion_AsNewVersion";
+            tS_SaveVersion_AsNewVersion.Size = new Size(180, 22);
+            tS_SaveVersion_AsNewVersion.Text = "As New Version";
+            // 
+            // tS_SaveNewVersion_DefaultName
+            // 
+            tS_SaveNewVersion_DefaultName.Name = "tS_SaveNewVersion_DefaultName";
+            tS_SaveNewVersion_DefaultName.Size = new Size(175, 22);
+            tS_SaveNewVersion_DefaultName.Text = "With Default Name";
+            // 
+            // tS_SaveNewVersion_WithName
+            // 
+            tS_SaveNewVersion_WithName.Name = "tS_SaveNewVersion_WithName";
+            tS_SaveNewVersion_WithName.Size = new Size(175, 22);
+            tS_SaveNewVersion_WithName.Text = "With Name...";
+            // 
+            // tS_SaveVersion_Overwrite
+            // 
+            tS_SaveVersion_Overwrite.Name = "tS_SaveVersion_Overwrite";
+            tS_SaveVersion_Overwrite.Size = new Size(180, 22);
+            tS_SaveVersion_Overwrite.Text = "Overwrite";
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
             toolStripSeparator1.Size = new Size(6, 25);
-            // 
-            // tS_SaveVersion
-            // 
-            tS_SaveVersion.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            tS_SaveVersion.Enabled = false;
-            tS_SaveVersion.ForeColor = SystemColors.MenuText;
-            tS_SaveVersion.Image = (Image)resources.GetObject("tS_SaveVersion.Image");
-            tS_SaveVersion.ImageTransparentColor = Color.Magenta;
-            tS_SaveVersion.Name = "tS_SaveVersion";
-            tS_SaveVersion.Size = new Size(76, 22);
-            tS_SaveVersion.Text = "Save Version";
             // 
             // toolStripSeparator2
             // 
@@ -109,13 +123,13 @@
             // tS_Include_CurrentVersion
             // 
             tS_Include_CurrentVersion.Name = "tS_Include_CurrentVersion";
-            tS_Include_CurrentVersion.Size = new Size(180, 22);
+            tS_Include_CurrentVersion.Size = new Size(155, 22);
             tS_Include_CurrentVersion.Text = "Current Version";
             // 
             // tS_Include_ChooseVersion
             // 
             tS_Include_ChooseVersion.Name = "tS_Include_ChooseVersion";
-            tS_Include_ChooseVersion.Size = new Size(180, 22);
+            tS_Include_ChooseVersion.Size = new Size(155, 22);
             tS_Include_ChooseVersion.Text = "Select Version...";
             // 
             // toolStripSeparator3
@@ -138,6 +152,7 @@
             // 
             toolStripSeparator4.Name = "toolStripSeparator4";
             toolStripSeparator4.Size = new Size(6, 25);
+            toolStripSeparator4.Visible = false;
             // 
             // tS_Revert
             // 
@@ -147,8 +162,9 @@
             tS_Revert.Image = (Image)resources.GetObject("tS_Revert.Image");
             tS_Revert.ImageTransparentColor = Color.Magenta;
             tS_Revert.Name = "tS_Revert";
-            tS_Revert.Size = new Size(72, 22);
-            tS_Revert.Text = "Revert Edits";
+            tS_Revert.Size = new Size(93, 22);
+            tS_Revert.Text = "Revert Changes";
+            tS_Revert.ToolTipText = "Revert all changes to this version.";
             // 
             // tS_VersionSelector
             // 
@@ -158,18 +174,6 @@
             tS_VersionSelector.Name = "tS_VersionSelector";
             tS_VersionSelector.Size = new Size(121, 25);
             tS_VersionSelector.SelectedIndexChanged += tS_VersionSelector_SelectedIndexChanged;
-            // 
-            // tS_NewVersion_AutoName
-            // 
-            tS_NewVersion_AutoName.Name = "tS_NewVersion_AutoName";
-            tS_NewVersion_AutoName.Size = new Size(180, 22);
-            tS_NewVersion_AutoName.Text = "Automatic Name";
-            // 
-            // tS_NewVersion_ChooseName
-            // 
-            tS_NewVersion_ChooseName.Name = "tS_NewVersion_ChooseName";
-            tS_NewVersion_ChooseName.Size = new Size(180, 22);
-            tS_NewVersion_ChooseName.Text = "With Name...";
             // 
             // FileEditorForm
             // 
@@ -207,10 +211,14 @@
         private ToolStripMenuItem tS_Include_CurrentVersion;
         private ToolStripMenuItem tS_Include_ChooseVersion;
         private ToolStripComboBox tS_VersionSelector;
-        private ToolStripSplitButton tS_NewVersion;
+        private ToolStripSplitButton tS_SaveVersion;
         private ToolStripSeparator toolStripSeparator4;
-        private ToolStripButton tS_SaveVersion;
-        private ToolStripMenuItem tS_NewVersion_AutoName;
+        private ToolStripMenuItem tS_NewVersion_DefaultName;
         private ToolStripMenuItem tS_NewVersion_ChooseName;
+        private ToolStripMenuItem tS_SaveVersion_AsNewVersion;
+        private ToolStripMenuItem toolStripMenuItem2;
+        private ToolStripMenuItem tS_SaveNewVersion_DefaultName;
+        private ToolStripMenuItem tS_SaveNewVersion_WithName;
+        private ToolStripMenuItem tS_SaveVersion_Overwrite;
     }
 }
