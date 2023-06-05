@@ -83,6 +83,8 @@ namespace ParBoil
         private readonly Color EditableColor = Color.FromArgb(45, 45, 45);
         private readonly Font EditorFont = new Font("MS Mincho", 18, FontStyle.Regular);
 
+        private bool respondToEdits = true;
+
 
         private DataStream WriteFileAsJSON(string jsoname)
         {
@@ -182,7 +184,7 @@ namespace ParBoil
 
         public void UpdateTitle()
         {
-            if (file.EditedControls != null)
+            if (file.EditedControls != null && respondToEdits == true)
             {
                 if (file.EditedControls.Count > 0 && Text[^1] != '*')
                 {
@@ -263,7 +265,9 @@ namespace ParBoil
                 {
                     var json = Program.CopyStreamFromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
                     file.LoadFromJSON(json);
+                    respondToEdits = false;
                     file.UpdateControls();
+                    respondToEdits = true;
                 }
                 else
                 {
@@ -275,6 +279,8 @@ namespace ParBoil
                 Controls.SetChildIndex(file.Handle, 1);
 
                 tSSB_Include.Enabled = tS_VersionSelector.SelectedItem != PM.Original;
+
+                UpdateTitle();
             }
         }
     }
