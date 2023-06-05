@@ -278,7 +278,7 @@ namespace ParBoil
 
                 Controls.SetChildIndex(file.Handle, 1);
 
-                tSSB_Include.Enabled = tS_VersionSelector.SelectedItem != PM.Original;
+                tS_Include.Enabled = tS_VersionSelector.SelectedItem != PM.Original;
 
                 UpdateTitle();
             }
