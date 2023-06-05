@@ -281,9 +281,6 @@ namespace ParBoil.RGGFormats
                 // MSGFormat
                 Misc = new MiscEntry[this.Misc.Length],
                 Sections = new Section[this.Sections.Length],
-
-                EditedControls = new List<Control>(),
-                Handle = this.Handle, // Temp
             };
 
             Array.Copy(Misc, msg.Misc, Misc.Length);

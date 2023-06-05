@@ -98,7 +98,7 @@ internal class ProjectManager
             {
                 var split = includePath.Split(':');
                 var file = Navigator.SearchNode(Par, split[0]);
-                file.Tags["IncludedVersion"] = file.Tags["SelectedVersion"] = split[1];
+                file.Tags["IncludedVersion"] = split[1];
 
                 string includedFile = $"{Project}{file.Path}/{file.Name}";
                 string originalJSON = $"{Project}{file.Path}/{Original}.json";

@@ -28,16 +28,27 @@ namespace ParBoil
 
             if (!node.Tags.ContainsKey("SelectedVersion"))
             {
-                node.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
-
-                if (WorkingEnvironmentExists())
+                if (!node.Tags.ContainsKey("IncludedVersion"))
                 {
-                    LoadWorkingEnvironment();
+                    node.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
+
+                    if (WorkingEnvironmentExists())
+                    {
+                        LoadWorkingEnvironment();
+                    }
+                    else
+                    {
+                        file.LoadFromBin();
+                        CreateWorkingEnvironment();
+                    }
                 }
                 else
                 {
-                    file.LoadFromBin();
-                    CreateWorkingEnvironment();
+                    node.Tags["LoadedVersions"][PM.Original].GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+                    Controls.Add(node.Tags["LoadedVersions"][PM.Original].Handle);
+
+                    PopulateVersionSelector();
+                    LoadVersion(node.Tags["IncludedVersion"]);
                 }
 
                 file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
@@ -46,26 +57,22 @@ namespace ParBoil
             {
                 PopulateVersionSelector();
 
-                if (node.Tags.ContainsKey("IncludedVersion"))
-                {
-                    if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["IncludedVersion"]))
-                    {
-                        LoadVersion(node.Tags["IncludedVersion"]);
+                foreach (RGGFormat format in node.Tags["LoadedVersions"].Values)
+                    Controls.Add(format.Handle);
 
-                        node.Tags["LoadedVersions"][PM.Original].GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
-
-                        file.Handle = node.Tags["LoadedVersions"][PM.Original].Handle;
-                        file.EditedControls = new List<Control>();
-
-                        file.UpdateControls();
-                        node.Tags["LoadedVersions"][node.Tags["IncludedVersion"]] = file;
-                    }
-                }
+                tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
             }
 
             tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
 
-            Controls.Add(file.Handle);
+            if (!Controls.Contains(file.Handle))
+                Controls.Add(file.Handle);
+
+            if (node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
+                Controls.SetChildIndex(node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]].Handle, 1);
+            else
+                Controls.SetChildIndex(file.Handle, 1);
+
             UpdateTitle();
         }
 
@@ -89,7 +96,14 @@ namespace ParBoil
 
         private void SaveNewVersion(string name = "", bool selectNewVersion = true)
         {
-            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat(duplicateStream: true);
+            if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
+            {
+                var previousVersion = file.CopyFormat(duplicateStream: true);
+                previousVersion.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+                node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = previousVersion;
+                if (!Controls.Contains(previousVersion.Handle))
+                    Controls.Add(previousVersion.Handle);
+            }
 
             file.ProcessEdits();
             UpdateTitle();
@@ -119,8 +133,10 @@ namespace ParBoil
             if (File.Exists(name))
             {
                 using var json = DataStreamFactory.FromFile(name, FileOpenMode.Read);
-
                 file.LoadFromJSON(json);
+
+                node.Tags["SelectedVersion"] = version;
+                tS_VersionSelector.SelectedItem = version;
             }
         }
 
@@ -128,8 +144,6 @@ namespace ParBoil
         {
             foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
                 tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
-
-            tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
         }
 
 
@@ -217,7 +231,9 @@ namespace ParBoil
                 }
             }
 
-            Controls.Remove(file.Handle); // We don't want the controls disposed of.
+            // We don't want the controls disposed of. Getting rid of all controls is fine,
+            // because the new form will always have its own instances of its native controls.
+            Controls.Clear();
         }
 
         private void FileEditorForm_Resize(object sender, EventArgs e) => file.Resize();
@@ -234,7 +250,11 @@ namespace ParBoil
                 }
                 else if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
                 {
-                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = file.CopyFormat(duplicateStream: true);
+                    var previousVersion = file.CopyFormat(duplicateStream: true);
+                    previousVersion.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = previousVersion;
+                    if (!Controls.Contains(previousVersion.Handle))
+                        Controls.Add(previousVersion.Handle);
                 }
 
                 node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
@@ -243,13 +263,16 @@ namespace ParBoil
                 {
                     var json = Program.CopyStreamFromFile(node.Tags["SelectedVersion"] + ".json", FileOpenMode.Read);
                     file.LoadFromJSON(json);
+                    file.UpdateControls();
                 }
                 else
                 {
                     file = node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]];
+                    if (!Controls.Contains(file.Handle))
+                        Controls.Add(file.Handle);
                 }
 
-                file.UpdateControls();
+                Controls.SetChildIndex(file.Handle, 1);
 
                 tSSB_Include.Enabled = tS_VersionSelector.SelectedItem != PM.Original;
             }
