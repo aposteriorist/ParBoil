@@ -188,10 +188,12 @@ namespace ParBoil
                 if (file.EditedControls.Count > 0 && Text[^1] != '*')
                 {
                     Text += '*';
+                    tS_Revert.Enabled = true;
                 }
                 else if (file.EditedControls.Count == 0 && Text[^1] == '*')
                 {
                     Text = Text[..^1];
+                    tS_Revert.Enabled = false;
                 }
             }
         }
@@ -277,10 +279,16 @@ namespace ParBoil
 
                 Controls.SetChildIndex(file.Handle, 1);
 
-                tS_Include.Enabled = tS_VersionSelector.SelectedItem != PM.Original;
+                tS_Include.Enabled = (string)tS_VersionSelector.SelectedItem != PM.Original;
 
                 UpdateTitle();
             }
+        }
+
+        private void tS_Revert_Click(object sender, EventArgs e)
+        {
+            file.RevertEdits();
+            UpdateFileEditStatus();
         }
     }
 }
