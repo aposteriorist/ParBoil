@@ -29,6 +29,8 @@ namespace ParBoil.RGGFormats
         internal Control Handle { get; set; }
         internal List<Control> EditedControls { get; set; }
 
+        internal bool IgnoreEdits { get; set; }
+
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
         public abstract RGGFormat CopyFormat(bool duplicateStream = false);

@@ -316,6 +316,8 @@ namespace ParBoil.RGGFormats
 
         public override void UpdateControls()
         {
+            IgnoreEdits = true;
+
             var topTabs = (TabControl)Handle;
 
             uint s = 0;
@@ -369,10 +371,14 @@ namespace ParBoil.RGGFormats
 
             EditedControls.Clear();
             topTabs.Refresh();
+
+            IgnoreEdits = false;
         }
 
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
         {
+            IgnoreEdits = true;
+
             EditedControls = new List<Control>();
 
             // Tabs are ugly. Could I do this custom with menu strips or buttons?
@@ -452,16 +458,7 @@ namespace ParBoil.RGGFormats
                 };
                 import.TextChanged += delegate
                 {
-                    if (import.Text != Misc[(int)import.Tag].Import)
-                    {
-                        if (!EditedControls.Contains(import)) EditedControls.Add(import);
-                    }
-                    else
-                    {
-                        if (EditedControls.Contains(import)) EditedControls.Remove(import);
-                    }
-
-                    if (import.FindForm() is FileEditorForm form) form.UpdateTitle();
+                    TextboxChanged(import, Misc[(int)import.Tag].Import);
                 };
 
                 panel.Controls.Add(export);
@@ -615,16 +612,7 @@ namespace ParBoil.RGGFormats
                         importPanel.Tag = textImport.Text;
                         textImport.TextChanged += delegate
                         {
-                            if (textImport.Text != (string)importPanel.Tag)
-                            {
-                                if (!EditedControls.Contains(textImport)) EditedControls.Add(textImport);
-                            }
-                            else
-                            {
-                                if (EditedControls.Contains(textImport)) EditedControls.Remove(textImport);
-                            }
-
-                            if (textImport.FindForm() is FileEditorForm form) form.UpdateTitle();
+                            TextboxChanged(textImport, (string)importPanel.Tag);
                         };
                         importPanel.Controls.Add(textImport);
 
@@ -646,6 +634,25 @@ namespace ParBoil.RGGFormats
 
             topTabs.SelectedIndexChanged += delegate { Resize(); };
             Handle = topTabs;
+
+            IgnoreEdits = false;
+        }
+
+        private void TextboxChanged(RichTextBox box, string comparator)
+        {
+            if (!IgnoreEdits)
+            {
+                if (box.Text != comparator)
+                {
+                    if (!EditedControls.Contains(box)) EditedControls.Add(box);
+                }
+                else
+                {
+                    if (EditedControls.Contains(box)) EditedControls.Remove(box);
+                }
+
+                if (box.FindForm() is FileEditorForm form) form.UpdateFileEditStatus();
+            }
         }
 
         public override void ResizeAll(Size formSize)
@@ -834,6 +841,7 @@ namespace ParBoil.RGGFormats
 
         public override void RevertEdits()
         {
+            IgnoreEdits = true;
             foreach (RichTextBox box in EditedControls)
             {
                 if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
@@ -843,7 +851,9 @@ namespace ParBoil.RGGFormats
                     box.Text = Misc[(int)box.Tag].Import;
                     box.Parent.Tag = box.Text;
                 }
+                box.SelectionStart = box.TextLength;
             }
+            IgnoreEdits = false;
 
             EditedControls.Clear();
         }
