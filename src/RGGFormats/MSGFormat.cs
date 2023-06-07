@@ -981,6 +981,7 @@ namespace ParBoil.RGGFormats
             msg._functions = funcs.ToArray();
             msg.FunctionCount = (byte)funcs.Count;
             msg.Import = goro.ToString();
+            msg.Import = msg.Import.ReplaceLineEndings();
 
             msg.Functions = new string[funcs.Count];
 
