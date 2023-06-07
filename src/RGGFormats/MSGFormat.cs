@@ -1,4 +1,4 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -783,9 +783,7 @@ namespace ParBoil.RGGFormats
             }
 
             box.AppendText(text[i..]);
-
-            while (box.CanUndo)
-                box.ClearUndo();
+            box.ClearUndo();
         }
 
         // Logic inserted into UpdateMessage's loop, rather than calling the function directly.
@@ -844,14 +842,17 @@ namespace ParBoil.RGGFormats
             IgnoreEdits = true;
             foreach (RichTextBox box in EditedControls)
             {
-                if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
-                    InitializeText(box, Sections[s].Headers[h].Messages[m], import: true);
-                else
-                {
-                    box.Text = Misc[(int)box.Tag].Import;
-                    box.Parent.Tag = box.Text;
-                }
-                box.SelectionStart = box.TextLength;
+                while (box.CanUndo) box.Undo();
+
+                box.SelectAll();
+                box.Copy();
+
+                while (box.CanRedo) box.Redo();
+
+                box.SelectAll();
+                box.Paste();
+
+                box.Parent.Tag = box.Text;
             }
             IgnoreEdits = false;
 
