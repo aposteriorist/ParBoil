@@ -1,4 +1,4 @@
-using ParLibrary;
+﻿using ParLibrary;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -316,7 +316,7 @@ namespace ParBoil.RGGFormats
 
         public override void UpdateControls()
         {
-            IgnoreEdits = true;
+            TrackEdits = false;
 
             var topTabs = (TabControl)Handle;
 
@@ -372,12 +372,12 @@ namespace ParBoil.RGGFormats
             EditedControls.Clear();
             topTabs.Refresh();
 
-            IgnoreEdits = false;
+            TrackEdits = true;
         }
 
         public override void GenerateControls(Size formSize, Color formForeColor, Color formEditableColor, Color formBackColor, Font formFont)
         {
-            IgnoreEdits = true;
+            TrackEdits = false;
 
             EditedControls = new List<Control>();
 
@@ -635,12 +635,12 @@ namespace ParBoil.RGGFormats
             topTabs.SelectedIndexChanged += delegate { Resize(); };
             Handle = topTabs;
 
-            IgnoreEdits = false;
+            TrackEdits = true;
         }
 
         private void TextboxChanged(RichTextBox box, string comparator)
         {
-            if (!IgnoreEdits)
+            if (TrackEdits)
             {
                 if (box.Text != comparator)
                 {
@@ -820,11 +820,11 @@ namespace ParBoil.RGGFormats
 
         public override void FormClosing()
         {
-            ProcessEdits();
+            ApplyEdits();
             UpdateStream();
         }
 
-        public override void ProcessEdits()
+        public override void ApplyEdits()
         {
             foreach (RichTextBox box in EditedControls)
             {
@@ -839,7 +839,7 @@ namespace ParBoil.RGGFormats
 
         public override void RevertEdits()
         {
-            IgnoreEdits = true;
+            TrackEdits = false;
             foreach (RichTextBox box in EditedControls)
             {
                 while (box.CanUndo) box.Undo();
@@ -854,7 +854,7 @@ namespace ParBoil.RGGFormats
 
                 box.Parent.Tag = box.Text;
             }
-            IgnoreEdits = false;
+            TrackEdits = true;
 
             EditedControls.Clear();
         }

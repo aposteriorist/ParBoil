@@ -29,7 +29,7 @@ namespace ParBoil.RGGFormats
         internal Control Handle { get; set; }
         internal List<Control> EditedControls { get; set; }
 
-        internal bool IgnoreEdits { get; set; }
+        internal bool TrackEdits { get; set; }
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
@@ -40,7 +40,7 @@ namespace ParBoil.RGGFormats
         public abstract void ResizeAll(Size size);
         public abstract void Resize();
 
-        public abstract void ProcessEdits();
+        public abstract void ApplyEdits();
         public abstract void RevertEdits();
         public abstract DataStream UpdateStream(bool overwrite = false);
         public abstract DataStream ToJSONStream();
