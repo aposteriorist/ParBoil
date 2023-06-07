@@ -1,4 +1,4 @@
-﻿using ParLibrary;
+using ParLibrary;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -828,6 +828,8 @@ namespace ParBoil.RGGFormats
         {
             foreach (RichTextBox box in EditedControls)
             {
+                box.Parent.Tag = box.Text;
+
                 if (box.Tag is ValueTuple<uint, uint, uint>(var s, var h, var m))
                     UpdateMessage(box, s, h, m);
                 else
