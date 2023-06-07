@@ -863,138 +863,135 @@ namespace ParBoil.RGGFormats
 
         private void UpdateMessage(RichTextBox box, uint s, uint h, uint m)
         {
-            if (box.CanUndo)
+            var msg = Sections[s].Headers[h].Messages[m];
+            var goro = new StringBuilder();
+
+            var funcs = new List<Function>();
+            bool textHandled = false;
+            foreach (var func in Sections[s].Headers[h].Messages[m]._functions)
             {
-                var msg = Sections[s].Headers[h].Messages[m];
-                var goro = new StringBuilder();
-
-                var funcs = new List<Function>();
-                bool textHandled = false;
-                foreach (var func in Sections[s].Headers[h].Messages[m]._functions)
+                if (func.Type != 2)
                 {
-                    if (func.Type != 2)
+                    if (func.Type == 1)
                     {
-                        if (func.Type == 1)
-                        {
-                            func.Args[2] = (short)box.TextLength;
-                        }
-                        funcs.Add(func);
+                        func.Args[2] = (short)box.TextLength;
                     }
-
-                    else if (func.Subtype == 0xb || func.Subtype == 0xc || func.Subtype == 0x13) // Intentionally ignoring 020e (JIS parens function)
-                        funcs.Add(func);
-
-                    else if (!textHandled)
-                    {
-                        // Go through char-by-char and update functions as done in msgtool.
-                        short charCount = 0;
-                        box.SelectionStart = 0;
-                        box.SelectionLength = 1;
-                        bool openColorTag = false;
-                        var newFunc = new Function() { Type = 2, Args = new short[9] };
-                        foreach (char ch in box.Text)
-                        {
-                            if (ch == '<')
-                            {
-                                newFunc.Subtype = 0xa;
-                                newFunc.Args[2] = charCount;
-                                charCount++;
-                            }
-
-                            else if (newFunc.Type == 0xa)
-                            {
-                                if (ch == '>')
-                                {
-                                    string tag = box.Text[newFunc.Args[2]..(box.SelectionStart + 1)];
-                                    short.TryParse(tag[6..^1], out newFunc.Args[3]); // 0 for letters (e.g. Sign:D), for now
-                                    newFunc.Args[4] = (short)tag.Length;
-                                    funcs.Add(newFunc);
-                                    newFunc = new Function() { Type = 2, Args = new short[9] };
-                                }
-                            }
-
-                            else if (ch != '\r')
-                            {
-                                if (!openColorTag && box.SelectionColor != box.ForeColor)
-                                {
-                                    openColorTag = true;
-                                    Color c = box.SelectionColor;
-                                    newFunc.Subtype = 7;
-                                    string tag = $"<Color:{c.R},{c.G},{c.B},{c.A}>";
-                                    goro.Append(tag);
-                                    newFunc.Args[2] = charCount;
-                                    newFunc.Args[4] = (short)tag.Length;
-                                    Array.Copy(new byte[4] { c.A, c.R, c.G, c.B }, 0, newFunc.Args, 5, 4);
-                                    funcs.Add(newFunc);
-                                    newFunc = new Function() { Type = 2, Args = new short[9] };
-                                }
-                                else if (openColorTag && box.SelectionColor == box.ForeColor)
-                                {
-                                    openColorTag = false;
-                                    newFunc.Subtype = 8;
-                                    string tag = "<Color:Default>";
-                                    goro.Append(tag);
-                                    newFunc.Args[2] = charCount;
-                                    newFunc.Args[4] = (short)tag.Length;
-                                    funcs.Add(newFunc);
-                                    newFunc = new Function() { Type = 2, Args = new short[9] };
-                                }
-
-                                charCount++;
-
-                                if (ch == ',' || ch == '、')
-                                {
-                                    newFunc.Subtype = 1;
-                                    newFunc.Args[0] = 0xa;
-                                    newFunc.Args[2] = charCount;
-                                    funcs.Add(newFunc);
-                                    newFunc = new Function() { Type = 2, Args = new short[9] };
-                                }
-                                else if (ch == '.' || ch == '!' || ch == '?' || ch == '。' || ch == '！' || ch == '？')
-                                {
-                                    if (funcs.Count > 0 && funcs[^1].Subtype == 1 && funcs[^1].Args[2] == charCount - 1)
-                                    {
-                                        // Repeating Ender, e.g. "..."
-                                        newFunc = funcs[^1];
-                                        newFunc.Args[2]++;
-                                        funcs.RemoveAt(funcs.Count - 1);
-                                        funcs.Add(newFunc);
-                                        newFunc = new Function() { Type = 2, Args = new short[9] };
-                                    }
-                                    else
-                                    {
-                                        newFunc.Subtype = 1;
-                                        newFunc.Args[0] = 0x14;
-                                        newFunc.Args[2] = charCount;
-                                        funcs.Add(newFunc);
-                                        newFunc = new Function() { Type = 2, Args = new short[9] };
-                                    }
-                                }
-                            }
-
-                            goro.Append(ch);
-                            box.SelectionStart++;
-                            box.SelectionLength = 1;
-                        }
-                        textHandled = true;
-                    }
+                    funcs.Add(func);
                 }
 
-                msg._functions = funcs.ToArray();
-                msg.FunctionCount = (byte)funcs.Count;
-                msg.Import = goro.ToString();
+                else if (func.Subtype == 0xb || func.Subtype == 0xc || func.Subtype == 0x13) // Intentionally ignoring 020e (JIS parens function)
+                    funcs.Add(func);
 
-                msg.Functions = new string[funcs.Count];
+                else if (!textHandled)
+                {
+                    // Go through char-by-char and update functions as done in msgtool.
+                    short charCount = 0;
+                    box.SelectionStart = 0;
+                    box.SelectionLength = 1;
+                    bool openColorTag = false;
+                    var newFunc = new Function() { Type = 2, Args = new short[9] };
+                    foreach (char ch in box.Text)
+                    {
+                        if (ch == '<')
+                        {
+                            newFunc.Subtype = 0xa;
+                            newFunc.Args[2] = charCount;
+                            charCount++;
+                        }
 
-                int f = 0;
-                foreach (var func in funcs)
-                    msg.Functions[f++] = String.Format("{0:X2} {1:X2} ({2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
-                                func.Type, func.Subtype, func.Args[0], func.Args[1],
-                                func.Args[2], func.Args[3], func.Args[4], func.Args[5],
-                                func.Args[6], func.Args[7], func.Args[8]);
+                        else if (newFunc.Type == 0xa)
+                        {
+                            if (ch == '>')
+                            {
+                                string tag = box.Text[newFunc.Args[2]..(box.SelectionStart + 1)];
+                                short.TryParse(tag[6..^1], out newFunc.Args[3]); // 0 for letters (e.g. Sign:D), for now
+                                newFunc.Args[4] = (short)tag.Length;
+                                funcs.Add(newFunc);
+                                newFunc = new Function() { Type = 2, Args = new short[9] };
+                            }
+                        }
 
-                Sections[s].Headers[h].Messages[m] = msg;
+                        else if (ch != '\r')
+                        {
+                            if (!openColorTag && box.SelectionColor != box.ForeColor)
+                            {
+                                openColorTag = true;
+                                Color c = box.SelectionColor;
+                                newFunc.Subtype = 7;
+                                string tag = $"<Color:{c.R},{c.G},{c.B},{c.A}>";
+                                goro.Append(tag);
+                                newFunc.Args[2] = charCount;
+                                newFunc.Args[4] = (short)tag.Length;
+                                Array.Copy(new byte[4] { c.A, c.R, c.G, c.B }, 0, newFunc.Args, 5, 4);
+                                funcs.Add(newFunc);
+                                newFunc = new Function() { Type = 2, Args = new short[9] };
+                            }
+                            else if (openColorTag && box.SelectionColor == box.ForeColor)
+                            {
+                                openColorTag = false;
+                                newFunc.Subtype = 8;
+                                string tag = "<Color:Default>";
+                                goro.Append(tag);
+                                newFunc.Args[2] = charCount;
+                                newFunc.Args[4] = (short)tag.Length;
+                                funcs.Add(newFunc);
+                                newFunc = new Function() { Type = 2, Args = new short[9] };
+                            }
+
+                            charCount++;
+
+                            if (ch == ',' || ch == '、')
+                            {
+                                newFunc.Subtype = 1;
+                                newFunc.Args[0] = 0xa;
+                                newFunc.Args[2] = charCount;
+                                funcs.Add(newFunc);
+                                newFunc = new Function() { Type = 2, Args = new short[9] };
+                            }
+                            else if (ch == '.' || ch == '!' || ch == '?' || ch == '。' || ch == '！' || ch == '？')
+                            {
+                                if (funcs.Count > 0 && funcs[^1].Subtype == 1 && funcs[^1].Args[2] == charCount - 1)
+                                {
+                                    // Repeating Ender, e.g. "..."
+                                    newFunc = funcs[^1];
+                                    newFunc.Args[2]++;
+                                    funcs.RemoveAt(funcs.Count - 1);
+                                    funcs.Add(newFunc);
+                                    newFunc = new Function() { Type = 2, Args = new short[9] };
+                                }
+                                else
+                                {
+                                    newFunc.Subtype = 1;
+                                    newFunc.Args[0] = 0x14;
+                                    newFunc.Args[2] = charCount;
+                                    funcs.Add(newFunc);
+                                    newFunc = new Function() { Type = 2, Args = new short[9] };
+                                }
+                            }
+                        }
+
+                        goro.Append(ch);
+                        box.SelectionStart++;
+                        box.SelectionLength = 1;
+                    }
+                    textHandled = true;
+                }
             }
+
+            msg._functions = funcs.ToArray();
+            msg.FunctionCount = (byte)funcs.Count;
+            msg.Import = goro.ToString();
+
+            msg.Functions = new string[funcs.Count];
+
+            int f = 0;
+            foreach (var func in funcs)
+                msg.Functions[f++] = String.Format("{0:X2} {1:X2} ({2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
+                            func.Type, func.Subtype, func.Args[0], func.Args[1],
+                            func.Args[2], func.Args[3], func.Args[4], func.Args[5],
+                            func.Args[6], func.Args[7], func.Args[8]);
+
+            Sections[s].Headers[h].Messages[m] = msg;
         }
 
         public override DataStream UpdateStream(bool overwrite = false)
