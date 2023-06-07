@@ -88,12 +88,15 @@ namespace ParBoil
         private bool respondToEdits = true;
 
 
-        private DataStream WriteFileAsJSON(string jsoname)
+        private DataStream WriteFileAsJSON(string jsoname, bool overwrite = false)
         {
             var jsonStream = file.ToJSONStream();
 
-            if (!File.Exists(jsoname))
-                jsonStream.WriteTo(jsoname);
+            if (overwrite || !File.Exists(jsoname))
+            {
+                using var jsonFile = DataStreamFactory.FromFile(jsoname, FileOpenMode.Write);
+                jsonStream.WriteTo(jsonFile);
+            }
 
             return jsonStream;
         }
