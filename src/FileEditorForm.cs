@@ -134,6 +134,14 @@ namespace ParBoil
             }
         }
 
+        private void SaveVersion()
+        {
+            file.ApplyEdits();
+            UpdateFileEditStatus();
+
+            WriteFileAsJSON($"{node.Tags["SelectedVersion"]}.json", overwrite: true);
+        }
+
         private void LoadVersion(string version)
         {
             string name = version + ".json";
@@ -293,6 +301,97 @@ namespace ParBoil
         {
             file.RevertEdits();
             UpdateFileEditStatus();
+        }
+
+        private void tS_SaveVersion_Overwrite_Click(object sender, EventArgs e) => SaveVersion();
+        private void tS_SaveNewVersion_DefaultName_Click(object sender, EventArgs e) => SaveNewVersion();
+
+        private void tS_SaveNewVersion_WithName_Click(object sender, EventArgs e)
+        {
+            // Prompt for the new name.
+            string name = "";
+            var result = ShowNamePrompt(ref name);
+
+            if (result != DialogResult.Cancel)
+                SaveNewVersion(name);
+        }
+
+        private DialogResult ShowNamePrompt(ref string name)
+        {
+            var namePrompt = new Form()
+            {
+                Text = "Name the new version",
+                MinimizeBox = false,
+                MaximizeBox = false,
+                ClientSize = new Size(272, 110),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedToolWindow,
+            };
+
+            var desc = new Label()
+            {
+                Text = "No more than 16 characters.\nNone of the following characters: \\/:*?\"<>|",
+                Location = new Point(12, 12),
+                AutoSize = true,
+            };
+            var box = new TextBox()
+            {
+                Location = new Point(16, 48),
+                Multiline = false,
+                MaxLength = 16,
+                Width = 180,
+            };
+            var buttonOK = new Button()
+            {
+                Text = "Confirm",
+                Location = new Point(12, 80),
+                DialogResult = DialogResult.OK,
+                Enabled = false,
+            };
+            var buttonDefault = new Button()
+            {
+                Text = "Use default",
+                Location = new Point(buttonOK.Location.X + buttonOK.Width + 12, 80),
+                DialogResult = DialogResult.Continue,
+            };
+            var buttonCancel = new Button()
+            {
+                Text = "Cancel",
+                Location = new Point(buttonDefault.Location.X + buttonDefault.Width + 12, 80),
+                DialogResult = DialogResult.Cancel,
+            };
+
+
+            var expr = "\\/:*?\"<>|".ToCharArray();
+            var tip = new ToolTip()
+            {
+                InitialDelay = 0,
+            };
+
+            box.TextChanged += delegate
+            {
+                bool badBlood = box.Text.IndexOfAny(expr) != -1;
+                if (badBlood)
+                {
+                    box.Undo();
+                    SystemSounds.Beep.Play();
+                    tip.Show("Disallowed characters.", box, box.Width + 8, 0, 3000);
+                }
+                buttonOK.Enabled = box.TextLength > 0;
+                box.ClearUndo();
+            };
+
+            buttonDefault.Click += delegate { box.Text = ""; };
+
+
+            namePrompt.Controls.AddRange(new Control[] { desc, box, buttonOK, buttonDefault, buttonCancel });
+            namePrompt.AcceptButton = buttonOK;
+            namePrompt.CancelButton = buttonCancel;
+
+            var result = namePrompt.ShowDialog();
+            name = box.Text;
+
+            return result;
         }
     }
 }
