@@ -36,14 +36,14 @@
             tS_SaveNewVersion_WithName = new ToolStripMenuItem();
             tS_SaveVersion_Overwrite = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
-            toolStripSeparator2 = new ToolStripSeparator();
             tS_Include = new ToolStripSplitButton();
             tS_Include_CurrentVersion = new ToolStripMenuItem();
             tS_Include_ChooseVersion = new ToolStripMenuItem();
-            toolStripSeparator3 = new ToolStripSeparator();
+            toolStripSeparator2 = new ToolStripSeparator();
             tS_Exclude = new ToolStripButton();
-            toolStripSeparator4 = new ToolStripSeparator();
+            toolStripSeparator3 = new ToolStripSeparator();
             tS_Revert = new ToolStripButton();
+            toolStripSeparator4 = new ToolStripSeparator();
             tS_VersionSelector = new ToolStripComboBox();
             toolStripControls.SuspendLayout();
             SuspendLayout();
@@ -55,7 +55,7 @@
             toolStripControls.GripStyle = ToolStripGripStyle.Hidden;
             toolStripControls.Items.AddRange(new ToolStripItem[] { tS_SaveVersion, toolStripSeparator1, tS_Include, toolStripSeparator2, tS_Exclude, toolStripSeparator3, tS_Revert, toolStripSeparator4, tS_VersionSelector });
             toolStripControls.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
-            toolStripControls.Location = new Point(-1, 1337);
+            toolStripControls.Location = new Point(-1, 1307);
             toolStripControls.Name = "toolStripControls";
             toolStripControls.RenderMode = ToolStripRenderMode.Professional;
             toolStripControls.Size = new Size(568, 25);
@@ -64,6 +64,7 @@
             // 
             // tS_SaveVersion
             // 
+            tS_SaveVersion.AutoToolTip = false;
             tS_SaveVersion.DisplayStyle = ToolStripItemDisplayStyle.Text;
             tS_SaveVersion.DropDownItems.AddRange(new ToolStripItem[] { tS_SaveVersion_AsNewVersion, tS_SaveVersion_Overwrite });
             tS_SaveVersion.ForeColor = SystemColors.MenuText;
@@ -72,6 +73,7 @@
             tS_SaveVersion.Name = "tS_SaveVersion";
             tS_SaveVersion.Size = new Size(88, 22);
             tS_SaveVersion.Text = "Save Version";
+            tS_SaveVersion.ButtonClick += tS_SaveNewVersion_WithName_Click;
             // 
             // tS_SaveVersion_AsNewVersion
             // 
@@ -83,30 +85,28 @@
             // tS_SaveNewVersion_DefaultName
             // 
             tS_SaveNewVersion_DefaultName.Name = "tS_SaveNewVersion_DefaultName";
-            tS_SaveNewVersion_DefaultName.Size = new Size(175, 22);
+            tS_SaveNewVersion_DefaultName.Size = new Size(180, 22);
             tS_SaveNewVersion_DefaultName.Text = "With Default Name";
+            tS_SaveNewVersion_DefaultName.Click += tS_SaveNewVersion_DefaultName_Click;
             // 
             // tS_SaveNewVersion_WithName
             // 
             tS_SaveNewVersion_WithName.Name = "tS_SaveNewVersion_WithName";
-            tS_SaveNewVersion_WithName.Size = new Size(175, 22);
+            tS_SaveNewVersion_WithName.Size = new Size(180, 22);
             tS_SaveNewVersion_WithName.Text = "With Name...";
+            tS_SaveNewVersion_WithName.Click += tS_SaveNewVersion_WithName_Click;
             // 
             // tS_SaveVersion_Overwrite
             // 
             tS_SaveVersion_Overwrite.Name = "tS_SaveVersion_Overwrite";
             tS_SaveVersion_Overwrite.Size = new Size(180, 22);
             tS_SaveVersion_Overwrite.Text = "Overwrite";
+            tS_SaveVersion_Overwrite.Click += tS_SaveVersion_Overwrite_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
             toolStripSeparator1.Size = new Size(6, 25);
-            // 
-            // toolStripSeparator2
-            // 
-            toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(6, 25);
             // 
             // tS_Include
             // 
@@ -132,10 +132,10 @@
             tS_Include_ChooseVersion.Size = new Size(155, 22);
             tS_Include_ChooseVersion.Text = "Select Version...";
             // 
-            // toolStripSeparator3
+            // toolStripSeparator2
             // 
-            toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new Size(6, 25);
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(6, 25);
             // 
             // tS_Exclude
             // 
@@ -148,11 +148,10 @@
             tS_Exclude.Size = new Size(107, 22);
             tS_Exclude.Text = "Exclude From PAR";
             // 
-            // toolStripSeparator4
+            // toolStripSeparator3
             // 
-            toolStripSeparator4.Name = "toolStripSeparator4";
-            toolStripSeparator4.Size = new Size(6, 25);
-            toolStripSeparator4.Visible = false;
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(6, 25);
             // 
             // tS_Revert
             // 
@@ -165,6 +164,13 @@
             tS_Revert.Size = new Size(93, 22);
             tS_Revert.Text = "Revert Changes";
             tS_Revert.ToolTipText = "Revert all changes to this version.";
+            tS_Revert.Click += tS_Revert_Click;
+            // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(6, 25);
+            toolStripSeparator4.Visible = false;
             // 
             // tS_VersionSelector
             // 

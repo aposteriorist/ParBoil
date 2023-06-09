@@ -1,6 +1,7 @@
 using ParBoil.RGGFormats;
 using System.Collections.Immutable;
 using System.Data;
+using System.Media;
 using Yarhl.FileSystem;
 using Yarhl.IO;
 
@@ -75,7 +76,7 @@ namespace ParBoil
             else
                 Controls.SetChildIndex(file.Handle, 1);
 
-            UpdateTitle();
+            UpdateFileEditStatus();
         }
 
         private readonly Node node;
@@ -112,8 +113,8 @@ namespace ParBoil
                     Controls.Add(previousVersion.Handle);
             }
 
-            file.ProcessEdits();
-            UpdateTitle();
+            file.ApplyEdits();
+            UpdateFileEditStatus();
 
             if (name == "")
             {
@@ -164,7 +165,7 @@ namespace ParBoil
 
         private void LoadWorkingEnvironment()
         {
-            // Instead of loading current.json, I want to load the most-recently created file.
+            // Load the most recently created file.
             string mostRecentFile = null;
             foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
             {
@@ -184,7 +185,7 @@ namespace ParBoil
         private bool WorkingEnvironmentExists() => File.Exists(PM.Original + ".json");
 
 
-        public void UpdateTitle()
+        public void UpdateFileEditStatus()
         {
             if (file.EditedControls != null && respondToEdits == true)
             {
@@ -284,7 +285,7 @@ namespace ParBoil
 
                 tS_Include.Enabled = (string)tS_VersionSelector.SelectedItem != PM.Original;
 
-                UpdateTitle();
+                UpdateFileEditStatus();
             }
         }
 
