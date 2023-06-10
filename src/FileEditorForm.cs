@@ -197,7 +197,7 @@ namespace ParBoil
 
         public void UpdateFileEditStatus()
         {
-            if (file.EditedControls != null && respondToEdits == true)
+            if (respondToEdits == true)
             {
                 bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
                 if (file.EditedControls.Count > 0 && Text[^1] != '*')
@@ -263,7 +263,7 @@ namespace ParBoil
             // (!node.Tags.ContainsKey("SelectedVersion") should be an error if it occurs here.
             if (tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]))
             {
-                if (file.EditedControls != null && file.EditedControls.Count > 0)
+                if (file.EditedControls.Count > 0)
                 {
                     // Do you want to save your changes as a new version automatically?
                     SaveNewVersion(selectNewVersion: false);
