@@ -330,7 +330,7 @@ namespace ParBoil
 
             var desc = new Label()
             {
-                Text = "No more than 16 characters.\nNone of the following characters: \\/:*?\"<>|",
+                Text = "No more than 16 characters.\nNone of the following characters: ?:*\"<>\\|/",
                 Location = new Point(12, 12),
                 AutoSize = true,
             };
@@ -389,7 +389,9 @@ namespace ParBoil
             namePrompt.CancelButton = buttonCancel;
 
             var result = namePrompt.ShowDialog();
-            name = box.Text;
+
+            if (!string.IsNullOrWhiteSpace(box.Text))
+                name = box.Text;
 
             return result;
         }
