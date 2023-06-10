@@ -66,7 +66,9 @@ namespace ParBoil
                 tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
             }
 
+            bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
             tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
+            tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
             if (!Controls.Contains(file.Handle))
                 Controls.Add(file.Handle);
@@ -197,15 +199,18 @@ namespace ParBoil
         {
             if (file.EditedControls != null && respondToEdits == true)
             {
+                bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
                 if (file.EditedControls.Count > 0 && Text[^1] != '*')
                 {
                     Text += '*';
                     tS_Revert.Enabled = true;
+                    tS_SaveVersion_Overwrite.Enabled = originalNotSelected;
                 }
                 else if (file.EditedControls.Count == 0 && Text[^1] == '*')
                 {
                     Text = Text[..^1];
                     tS_Revert.Enabled = false;
+                    tS_SaveVersion_Overwrite.Enabled = false;
                 }
             }
         }
@@ -291,7 +296,8 @@ namespace ParBoil
 
                 Controls.SetChildIndex(file.Handle, 1);
 
-                tS_Include.Enabled = (string)tS_VersionSelector.SelectedItem != PM.Original;
+                bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
+                tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
                 UpdateFileEditStatus();
             }
