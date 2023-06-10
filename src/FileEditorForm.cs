@@ -173,9 +173,9 @@ namespace ParBoil
 
         private void LoadWorkingEnvironment()
         {
-            // Load the most recently created file.
+            // Find the most recently edited file.
             string mostRecentFile = null;
-            foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetCreationTime(f)))
+            foreach (var filename in Directory.EnumerateFiles(WorkingFolder, "*.json").OrderByDescending(f => File.GetLastWriteTime(f)))
             {
                 mostRecentFile ??= filename;
                 tS_VersionSelector.Items.Add(Path.GetFileNameWithoutExtension(filename));
