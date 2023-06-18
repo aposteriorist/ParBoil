@@ -18,9 +18,10 @@ public partial class OptionBox : Form
         }
     }
 
-    private string SelectedOption = "";
-    private List<Button> Options = new List<Button>();
-    private List<Panel> Panels = new List<Panel>();
+    private int SelectedOption = -1;
+    private Dictionary<string, int> OptionLookup = new Dictionary<string, int>();
+    private Button[] Options;
+    private List<Panel> Rows = new List<Panel>();
 
     internal void AddOptions(params string[] labels)
     {
@@ -30,7 +31,22 @@ public partial class OptionBox : Form
             Width = 0,
         };
 
-        int maxWidth = Options.Count > 0 ? ClientSize.Width : 0;
+        int index;
+        if (Options == null)
+        {
+            index = 0;
+            Options = new Button[labels.Length];
+        }
+        else
+        {
+            index = Options.Length;
+
+            var temp = new Button[Options.Length + labels.Length];
+            Options.CopyTo(temp, 0);
+            Options = temp;
+        }
+
+        int maxWidth = Options.Length == labels.Length ? ClientSize.Width : 0;
         int x = 12;
 
         foreach (string label in labels)
@@ -43,10 +59,12 @@ public partial class OptionBox : Form
             panel.Width = x;
             option.Click += delegate
             {
-                SelectedOption = option.Text;
+                SelectedOption = OptionLookup[option.Text];
                 this.Close();
             };
-            Options.Add(option);
+
+            OptionLookup.Add(label, index);
+            Options[index++] = option;
             panel.Controls.Add(option);
         }
 
@@ -57,7 +75,7 @@ public partial class OptionBox : Form
             maxWidth = panel.Width;
             panel.Location = new Point(0, ClientSize.Height);
 
-            foreach (var oldPanel in Panels)
+            foreach (var oldPanel in Rows)
             {
                 oldPanel.Location = new Point((maxWidth - oldPanel.Width) / 2, oldPanel.Location.Y);
             }
@@ -68,16 +86,23 @@ public partial class OptionBox : Form
             panel.Location = new Point((maxWidth - panel.Width) / 2, ClientSize.Height);
         }
 
-        Panels.Add(panel);
+        Rows.Add(panel);
 
 
         ClientSize = new Size(maxWidth, ClientSize.Height + 35);
     }
 
-    internal string ShowOptions()
+    internal int ShowOptions()
     {
         ShowDialog();
 
         return SelectedOption;
     }
+
+    internal string GetOptionAt(int index) => Options[index].Text;
+
+    internal void SetAcceptOption(string accept) => AcceptButton = Options[OptionLookup[accept]];
+    internal void SetCancelOption(string cancel) => CancelButton = Options[OptionLookup[cancel]];
+    internal void SetAcceptOption(uint option) => AcceptButton = Options[option];
+    internal void SetCancelOption(uint option) => CancelButton = Options[option];
 }

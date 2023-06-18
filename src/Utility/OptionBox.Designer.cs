@@ -46,6 +46,7 @@ partial class OptionBox
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(284, 57);
         Controls.Add(Body);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         Name = "OptionBox";
