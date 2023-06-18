@@ -226,7 +226,8 @@ namespace ParBoil
             if (file.EditedControls.Count > 0)
             {
                 var result = MessageBox.Show("There are unsaved changes." +
-                    "\n\nDo you want to save your changes as a new version automatically?", "Unsaved Changes", MessageBoxButtons.YesNoCancel);
+                    "\n\nDo you want to save your changes?" +
+                    "\n(If you select 'No', your changes will remain until you close the program.)", "Unsaved changes", MessageBoxButtons.YesNoCancel);
                 if (result == DialogResult.Cancel)
                 {
                     e.Cancel = true;
@@ -236,10 +237,7 @@ namespace ParBoil
                 {
                     if (result == DialogResult.Yes)
                     {
-                        SaveNewVersion(); // Automatic name for now
-                        file.UpdateStream(overwrite: true);
-                        PM.IncludeFile(node, file); // Automatic for now
-                        node.Tags["IncludedVersion"] = tS_VersionSelector.SelectedItem;
+                        SavePrompt();
                     }
                     else
                     {
@@ -251,8 +249,9 @@ namespace ParBoil
                 }
             }
 
-            // We don't want the controls disposed of. Getting rid of all controls is fine,
-            // because the new form will always have its own instances of its native controls.
+            // We don't want the controls automatically disposed of, so we need to remove them from the form.
+            // Removing all controls is fine, since any new form will create its own instances of its native controls.
+
             Controls.Clear();
         }
 
@@ -400,6 +399,55 @@ namespace ParBoil
                 name = box.Text;
 
             return result;
+        }
+
+
+        private string SavePrompt()
+        {
+            string saveSlot = "";
+
+            // Ask how the user wants to save the file.
+            var savePrompt = new OptionBox("How would you like to save?");
+            savePrompt.Text = "Save Options";
+
+            string[] opts = { "Save Changes As New Version", "Overwrite Version", "Discard Changes", "Cancel" };
+            savePrompt.AddOptions(opts);
+
+            savePrompt.SetAcceptOption(0);
+            savePrompt.SetCancelOption(3);
+
+            int result = savePrompt.ShowOptions();
+
+            // Act based on the user's choice.
+            switch (result)
+            {
+                case 0:
+                    // Prompt for the new name.
+                    string name = "";
+                    if (ShowNamePrompt(ref name) == DialogResult.Cancel)
+                        goto case 3;
+
+                    SaveNewVersion(name);
+                    MessageBox.Show("Version saved.");
+                    break;
+
+                case 1:
+                    SaveVersion();
+                    MessageBox.Show("Version saved.");
+                    break;
+
+                case 2:
+                    file.RevertEdits();
+                    MessageBox.Show("Changes reverted.");
+                    break;
+
+                case 3:
+                    return saveSlot;
+            }
+
+            saveSlot = (string)tS_VersionSelector.SelectedItem;
+
+            return saveSlot;
         }
     }
 }
