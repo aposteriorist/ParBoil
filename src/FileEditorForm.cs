@@ -1,6 +1,8 @@
 using ParBoil.RGGFormats;
+using ParBoil.Utility;
 using System.Collections.Immutable;
 using System.Data;
+using System.Diagnostics;
 using System.Media;
 using Yarhl.FileSystem;
 using Yarhl.IO;
@@ -52,6 +54,7 @@ namespace ParBoil
                     LoadVersion(node.Tags["IncludedVersion"]);
                     node.Tags["SelectedVersion"] = node.Tags["IncludedVersion"];
                     tS_VersionSelector.SelectedItem = node.Tags["IncludedVersion"];
+                    file.Enabled = false;
                 }
 
                 file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
@@ -68,6 +71,7 @@ namespace ParBoil
 
             bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
             tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
+            tS_Include.Enabled = originalNotSelected;
             tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
             if (!Controls.Contains(file.Handle))
@@ -113,6 +117,10 @@ namespace ParBoil
                 node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = previousVersion;
                 if (!Controls.Contains(previousVersion.Handle))
                     Controls.Add(previousVersion.Handle);
+                if (!file.Enabled)
+                {
+                    file.EnableControls(true, EditableColor);
+                }
             }
 
             file.ApplyEdits();
@@ -204,12 +212,14 @@ namespace ParBoil
                 {
                     Text += '*';
                     tS_Revert.Enabled = true;
+                    tS_Include.Enabled = true;
                     tS_SaveVersion_Overwrite.Enabled = originalNotSelected;
                 }
                 else if (file.EditedControls.Count == 0 && Text[^1] == '*')
                 {
                     Text = Text[..^1];
                     tS_Revert.Enabled = false;
+                    tS_Include.Enabled = originalNotSelected;
                     tS_SaveVersion_Overwrite.Enabled = false;
                 }
             }
@@ -274,6 +284,10 @@ namespace ParBoil
                     node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = previousVersion;
                     if (!Controls.Contains(previousVersion.Handle))
                         Controls.Add(previousVersion.Handle);
+                    if (!file.Enabled)
+                    {
+                        file.EnableControls(true, EditableColor);
+                    }
                 }
 
                 node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
@@ -296,6 +310,7 @@ namespace ParBoil
                 Controls.SetChildIndex(file.Handle, 1);
 
                 bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
+                tS_Include.Enabled = originalNotSelected;
                 tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
                 UpdateFileEditStatus();
@@ -401,6 +416,42 @@ namespace ParBoil
             return result;
         }
 
+        private void tS_Include_CurrentVersion_Click(object sender, EventArgs e)
+        {
+            if (node.Tags["IncludedVersion"] == null || node.Tags["IncludedVersion"] != tS_VersionSelector.SelectedItem)
+            {
+                if (file.EditedControls.Count > 0)
+                {
+                    if (MessageBox.Show("This version of the file has unsaved changes." +
+                        "\nThese changes must be handled in order to include them.", "Unsaved Changes", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                        return;
+
+                    var saveSlot = SavePrompt(); Debug.WriteLine(saveSlot);
+
+                    if (saveSlot == "")
+                    {
+                        MessageBox.Show("File inclusion cancelled.");
+                        return;
+                    }
+                }
+
+                // Re-enable the previously included version.
+                if (node.Tags["IncludedVersion"] != null)
+                {
+                    node.Tags["LoadedVersions"][node.Tags["IncludedVersion"]].EnableControls(true, EditableColor);
+                }
+
+                // Update the stream so that it matches the RGGFormat's fields.
+                file.UpdateStream(overwrite: true);
+
+                // Include the current version.
+                PM.IncludeFile(node, file);
+                node.Tags["IncludedVersion"] = tS_VersionSelector.SelectedItem;
+
+                // Disable the controls.
+                file.EnableControls(false, BackColor);
+            }
+        }
 
         private string SavePrompt()
         {
