@@ -30,6 +30,7 @@ namespace ParBoil.RGGFormats
         internal List<Control> EditedControls { get; set; }
 
         internal bool TrackEdits { get; set; }
+        internal bool Enabled { get; set; }
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
@@ -37,6 +38,7 @@ namespace ParBoil.RGGFormats
 
         public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
         public abstract void UpdateControls();
+        public abstract void EnableControls(bool enabled, Color newBackColor);
         public abstract void ResizeAll(Size size);
         public abstract void Resize();
 

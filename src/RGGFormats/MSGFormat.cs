@@ -83,6 +83,8 @@ namespace ParBoil.RGGFormats
                 DecompressedSize = source.DecompressedSize,
                 Attributes = source.Attributes,
                 Timestamp = source.Timestamp,
+
+                Enabled = true,
             };
         }
 
@@ -278,6 +280,11 @@ namespace ParBoil.RGGFormats
                 Attributes = this.Attributes,
                 Timestamp = this.Timestamp,
 
+                // RGGFormat
+                // Handle, EditedControls intentionally omitted for the time being.
+                TrackEdits = this.TrackEdits,
+                Enabled = this.Enabled,
+
                 // MSGFormat
                 Misc = new MiscEntry[this.Misc.Length],
                 Sections = new Section[this.Sections.Length],
@@ -430,8 +437,8 @@ namespace ParBoil.RGGFormats
                     ForeColor = formForeColor,
                     Font = formFont,
                     Text = Misc[m].Export,
-                    Multiline = false,
                     ReadOnly = true,
+                    Multiline = false,
                     Margin = new Padding(30,0,15,0),
                     Tag = m,
                 };
@@ -440,10 +447,11 @@ namespace ParBoil.RGGFormats
                 {
                     Width = 300,
                     Height = 40,
-                    BackColor = formEditableColor,
+                    BackColor = (Enabled && Misc[m].Import.Length > 0) ? formEditableColor : panel.BackColor,
                     ForeColor = formForeColor,
                     Font = formFont,
                     Text = Misc[m].Import,
+                    ReadOnly = !Enabled || Misc[m].Import.Length == 0,
                     Multiline = false,
                     Margin = new Padding(15, 0, 3, 0),
                     Tag = m,
@@ -595,20 +603,22 @@ namespace ParBoil.RGGFormats
                             ReadOnly = true,
                             Tag = (s, h, m),
                         };
-                        InitializeText(textExport, message, import: false);
+                        if (message.Export.Length > 0)
+                            InitializeText(textExport, message, import: false);
                         exportPanel.Controls.Add(textExport);
 
                         var textImport = new RichTextBox()
                         {
                             Height = 140,
                             Width = exportPanel.Width - 2,
-                            BackColor = formEditableColor,
+                            BackColor = (Enabled && message.Export.Length > 0) ? formEditableColor : panel.BackColor,
                             ForeColor = formForeColor,
+                            ReadOnly = !Enabled || message.Export.Length == 0,
                             Font = formFont,
                             Tag = (s, h, m),
                         };
-                        InitializeText(textImport, message, import: true);
-                        if (textExport.Text == "") textImport.ReadOnly = true;
+                        if (message.Import.Length > 0)
+                            InitializeText(textImport, message, import: true);
                         importPanel.Tag = textImport.Text;
                         textImport.TextChanged += delegate
                         {
@@ -636,6 +646,44 @@ namespace ParBoil.RGGFormats
             Handle = topTabs;
 
             TrackEdits = true;
+        }
+
+        public override void EnableControls(bool editable, Color newBackColor)
+        {
+            var topTabs = (TabControl)Handle;
+
+            int i = 0;
+            foreach (TabPage sectionTab in topTabs.TabPages)
+            {
+                if (i == 0)
+                {
+                    var mp = (FlowLayoutPanel)sectionTab.Controls[0];
+                    foreach (FlowLayoutPanel panel in mp.Controls)
+                    {
+                        ((RichTextBox)panel.Controls[1]).ReadOnly = panel.Controls[1].Text.Length == 0 || !editable;
+                        panel.Controls[1].BackColor = newBackColor;
+                    }
+                }
+                else
+                {
+                    var tabs = (TabControl)sectionTab.Controls[0];
+                    foreach (TabPage headerTab in tabs.TabPages)
+                    {
+                        var mp = (FlowLayoutPanel)headerTab.Controls[0];
+                        foreach (FlowLayoutPanel panel in mp.Controls)
+                        {
+                            var importPanel = (FlowLayoutPanel)panel.Controls[2];
+
+                            ((RichTextBox)importPanel.Controls[^1]).ReadOnly = importPanel.Controls[^1].Text.Length == 0 || !editable;
+                            importPanel.Controls[^1].BackColor = newBackColor;
+                        }
+                    }
+                }
+
+                i++;
+            }
+
+            Enabled = editable;
         }
 
         private void TextboxChanged(RichTextBox box, string comparator)
