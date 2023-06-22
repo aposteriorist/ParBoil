@@ -9,7 +9,7 @@ using Yarhl.IO;
 
 namespace ParBoil;
 
-using PM = ProjectManager;
+using static ProjectManager;
 
 public partial class FileEditorForm : Form
 {
@@ -25,7 +25,7 @@ public partial class FileEditorForm : Form
             node.Tags[FirstLoadBuffer] = file;
         Text += node.Name;
 
-        WorkingFolder = PM.Project + node.Path[1..];
+        WorkingFolder = Project + node.Path[1..];
 
         if (!Directory.Exists(WorkingFolder))
             Directory.CreateDirectory(WorkingFolder);
@@ -33,11 +33,11 @@ public partial class FileEditorForm : Form
         Directory.SetCurrentDirectory(WorkingFolder);
 
 
-        if (!node.Tags.ContainsKey("SelectedVersion"))
+        if (!node.Tags.ContainsKey(SelectedVersion))
         {
-            if (!node.Tags.ContainsKey("IncludedVersion"))
+            if (!node.Tags.ContainsKey(IncludedVersion))
             {
-                node.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
+                node.Tags[LoadedVersions] = new Dictionary<string, RGGFormat>();
 
                 if (WorkingEnvironmentExists())
                 {
@@ -51,13 +51,13 @@ public partial class FileEditorForm : Form
             }
             else
             {
-                node.Tags["LoadedVersions"][PM.Original].GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
-                Controls.Add(node.Tags["LoadedVersions"][PM.Original].Handle);
+                node.Tags[LoadedVersions][Original].GenerateControls(Size, base.ForeColor, EditableColor, base.BackColor, EditorFont);
+                Controls.Add(node.Tags[LoadedVersions][Original].Handle);
 
                 PopulateVersionSelector();
-                LoadVersion(node.Tags["IncludedVersion"]);
-                node.Tags["SelectedVersion"] = node.Tags["IncludedVersion"];
-                tS_VersionSelector.SelectedItem = node.Tags["IncludedVersion"];
+                LoadVersion(node.Tags[IncludedVersion]);
+                node.Tags[SelectedVersion] = node.Tags[IncludedVersion];
+                tS_VersionSelector.SelectedItem = node.Tags[IncludedVersion];
                 file.Enabled = false;
             }
 
@@ -67,13 +67,13 @@ public partial class FileEditorForm : Form
         {
             PopulateVersionSelector();
 
-            foreach (RGGFormat format in node.Tags["LoadedVersions"].Values)
+            foreach (RGGFormat format in node.Tags[LoadedVersions].Values)
                 Controls.Add(format.Handle);
 
-            tS_VersionSelector.SelectedItem = node.Tags["SelectedVersion"];
+            tS_VersionSelector.SelectedItem = node.Tags[SelectedVersion];
         }
 
-        bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
+        bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != Original;
         tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
         tS_Include.Enabled = originalNotSelected;
         tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
@@ -81,8 +81,8 @@ public partial class FileEditorForm : Form
         if (!Controls.Contains(file.Handle))
             Controls.Add(file.Handle);
 
-        if (node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
-            Controls.SetChildIndex(node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]].Handle, 1);
+        if (node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
+            Controls.SetChildIndex(node.Tags[LoadedVersions][node.Tags[SelectedVersion]].Handle, 1);
         else
             Controls.SetChildIndex(file.Handle, 1);
 
@@ -118,9 +118,9 @@ public partial class FileEditorForm : Form
         format.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
 
         if (slot == "")
-            node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = format;
+            node.Tags[LoadedVersions][node.Tags[SelectedVersion]] = format;
         else
-            node.Tags["LoadedVersions"][slot] = format;
+            node.Tags[LoadedVersions][slot] = format;
 
         if (!Controls.Contains(format.Handle))
             Controls.Add(format.Handle);
@@ -128,9 +128,9 @@ public partial class FileEditorForm : Form
 
     private void StoreBufferAsVersion(string? version = null, bool overwrite = false)
     {
-        version ??= node.Tags["SelectedVersion"];
+        version ??= node.Tags[SelectedVersion];
 
-        if (overwrite || !node.Tags["LoadedVersions"].ContainsKey(version))
+        if (overwrite || !node.Tags[LoadedVersions].ContainsKey(version))
         {
             CopyBufferToStorage(version);
             if (!file.Enabled) file.EnableControls(true, EditableColor);
@@ -171,7 +171,7 @@ public partial class FileEditorForm : Form
 
         if (selectNewVersion)
         {
-            node.Tags["SelectedVersion"] = name;
+            node.Tags[SelectedVersion] = name;
 
             tS_VersionSelector.SelectedIndex = 0;
         }
@@ -182,7 +182,7 @@ public partial class FileEditorForm : Form
         file.ApplyEdits();
         UpdateFileEditStatus();
 
-        WriteFileAsJSON($"{node.Tags["SelectedVersion"]}.json", overwrite: true);
+        WriteFileAsJSON($"{node.Tags[SelectedVersion]}.json", overwrite: true);
     }
 
     private void LoadVersion(string version)
@@ -205,11 +205,11 @@ public partial class FileEditorForm : Form
 
     private void CreateWorkingEnvironment()
     {
-        tS_VersionSelector.Items.Add(PM.Original);
+        tS_VersionSelector.Items.Add(Original);
 
-        WriteFileAsJSON(PM.Original + ".json");
+        WriteFileAsJSON(Original + ".json");
 
-        node.Tags["SelectedVersion"] = PM.Original;
+        node.Tags[SelectedVersion] = Original;
 
         tS_VersionSelector.SelectedIndex = 0;
     }
@@ -228,19 +228,19 @@ public partial class FileEditorForm : Form
 
         file.LoadFromJSON(json);
 
-        node.Tags["SelectedVersion"] = (string)tS_VersionSelector.Items[0];
+        node.Tags[SelectedVersion] = (string)tS_VersionSelector.Items[0];
 
         tS_VersionSelector.SelectedIndex = 0;
     }
 
-    private bool WorkingEnvironmentExists() => File.Exists(PM.Original + ".json");
+    private bool WorkingEnvironmentExists() => File.Exists(Original + ".json");
 
 
     public void UpdateFileEditStatus()
     {
         if (respondToEdits == true)
         {
-            bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
+            bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != Original;
             if (file.EditedControls.Count > 0 && Text[^1] != '*')
             {
                 Text += '*';
@@ -288,7 +288,7 @@ public partial class FileEditorForm : Form
                     // Currently, then, the edits remain, just unsaved.
                 }
 
-                Directory.SetCurrentDirectory(PM.Project);
+                Directory.SetCurrentDirectory(Project);
             }
         }
 
@@ -303,7 +303,7 @@ public partial class FileEditorForm : Form
     private void tS_VersionSelector_SelectedIndexChanged(object sender, EventArgs e)
     {
         // (!node.Tags.ContainsKey("SelectedVersion") should be an error if it occurs here.
-        if (tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]))
+        if (tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags[SelectedVersion]))
         {
             StoreBufferAsVersion();
 
@@ -313,12 +313,12 @@ public partial class FileEditorForm : Form
                 SaveNewVersion(selectNewVersion: false);
             }
 
-            node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
+            node.Tags[SelectedVersion] = tS_VersionSelector.SelectedItem;
 
-            if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
+            if (!node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
             {
                 file = node.Tags[FirstLoadBuffer];
-                LoadVersion(node.Tags["SelectedVersion"]);
+                LoadVersion(node.Tags[SelectedVersion]);
 
                 respondToEdits = false;
                 file.UpdateControls();
@@ -326,14 +326,14 @@ public partial class FileEditorForm : Form
             }
             else
             {
-                file = node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]];
+                file = node.Tags[LoadedVersions][node.Tags[SelectedVersion]];
                 if (!Controls.Contains(file.Handle))
                     Controls.Add(file.Handle);
             }
 
             Controls.SetChildIndex(file.Handle, 1);
 
-            bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != PM.Original;
+            bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != Original;
             tS_Include.Enabled = originalNotSelected;
             tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
@@ -445,7 +445,7 @@ public partial class FileEditorForm : Form
 
     private void tS_Include_CurrentVersion_Click(object sender, EventArgs e)
     {
-        if (node.Tags["IncludedVersion"] == null || node.Tags["IncludedVersion"] != tS_VersionSelector.SelectedItem)
+        if (node.Tags[IncludedVersion] == null || node.Tags[IncludedVersion] != tS_VersionSelector.SelectedItem)
         {
             if (file.EditedControls.Count > 0)
             {
@@ -463,17 +463,17 @@ public partial class FileEditorForm : Form
             }
 
             // Re-enable the previously included version.
-            if (node.Tags["IncludedVersion"] != null)
+            if (node.Tags[IncludedVersion] != null)
             {
-                node.Tags["LoadedVersions"][node.Tags["IncludedVersion"]].EnableControls(true, EditableColor);
+                node.Tags[LoadedVersions][node.Tags[IncludedVersion]].EnableControls(true, EditableColor);
             }
 
             // Update the stream so that it matches the RGGFormat's fields.
             file.UpdateStream(overwrite: true);
 
             // Include the current version.
-            PM.IncludeFile(node, file);
-            node.Tags["IncludedVersion"] = tS_VersionSelector.SelectedItem;
+            IncludeFile(node, file);
+            node.Tags[IncludedVersion] = tS_VersionSelector.SelectedItem;
 
             // Disable the controls.
             file.EnableControls(false, BackColor);

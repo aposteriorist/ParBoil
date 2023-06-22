@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,7 +22,10 @@ internal class ProjectManager
     public static string Project;
     public static string Name;
 
-    internal static readonly string Original = "Original";
+    internal const string Original = "Original";
+    internal const string LoadedVersions = "LoadedVersions";
+    internal const string IncludedVersion = "IncludedVersion";
+    internal const string SelectedVersion = "SelectedVersion";
 
     private static ParArchiveReaderParameters readerParams;
     private static ParArchiveWriterParameters writerParams;
@@ -49,7 +52,7 @@ internal class ProjectManager
             var writer = new Yarhl.IO.TextWriter(includeFile);
             foreach (var node in includedNodes)
             {
-                writer.WriteLine($"{node.Path}:{node.Tags["IncludedVersion"]}");
+                writer.WriteLine($"{node.Path}:{node.Tags[IncludedVersion]}");
             }
         }
 
@@ -98,7 +101,6 @@ internal class ProjectManager
             {
                 var split = includePath.Split(':');
                 var file = Navigator.SearchNode(Par, split[0]);
-                file.Tags["IncludedVersion"] = split[1];
 
                 string includedFile = $"{Project}{file.Path}/{file.Name}";
                 string originalJSON = $"{Project}{file.Path}/{Original}.json";
@@ -107,6 +109,8 @@ internal class ProjectManager
                 {
                     continue;
                 }
+
+                file.Tags[IncludedVersion] = split[1];
 
                 if (file.GetFormatAs<ParFile>().IsCompressed)
                     file.TransformWith<Decompressor>();
@@ -118,8 +122,8 @@ internal class ProjectManager
                 using var json = DataStreamFactory.FromFile(originalJSON, FileOpenMode.Read);
                 oldFormat.LoadFromJSON(json);
 
-                file.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
-                file.Tags["LoadedVersions"][Original] = oldFormat;
+                file.Tags[LoadedVersions] = new Dictionary<string, RGGFormat>();
+                file.Tags[LoadedVersions][Original] = oldFormat;
 
                 includedNodes.Add(file);
 
@@ -192,9 +196,9 @@ internal class ProjectManager
 
     public static void ExcludeFile(Node file)
     {
-        if (file.Tags.ContainsKey("LoadedVersions") && file.Tags["LoadedVersions"].ContainsKey(Original))
+        if (file.Tags.ContainsKey(LoadedVersions) && file.Tags[LoadedVersions].ContainsKey(Original))
         {
-            file.ChangeFormat(file.Tags["LoadedVersions"][Original], disposePreviousFormat: false);
+            file.ChangeFormat(file.Tags[LoadedVersions][Original], disposePreviousFormat: false);
 
             includedNodes.Remove(file);
         }
