@@ -71,6 +71,9 @@ public partial class FileEditorForm : Form
                 Controls.Add(format.Handle);
 
             tS_VersionSelector.SelectedItem = node.Tags[SelectedVersion];
+
+            if (node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
+                file = node.Tags[LoadedVersions][node.Tags[SelectedVersion]];
         }
 
         bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != Original;
@@ -81,10 +84,7 @@ public partial class FileEditorForm : Form
         if (!Controls.Contains(file.Handle))
             Controls.Add(file.Handle);
 
-        if (node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
-            Controls.SetChildIndex(node.Tags[LoadedVersions][node.Tags[SelectedVersion]].Handle, 1);
-        else
-            Controls.SetChildIndex(file.Handle, 1);
+        Controls.SetChildIndex(file.Handle, 1);
 
         UpdateFileEditStatus();
     }
