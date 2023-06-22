@@ -76,10 +76,7 @@ public partial class FileEditorForm : Form
                 file = node.Tags[LoadedVersions][node.Tags[SelectedVersion]];
         }
 
-        bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != Original;
         tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
-        tS_Include.Enabled = originalNotSelected;
-        tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
         if (!Controls.Contains(file.Handle))
             Controls.Add(file.Handle);
@@ -332,10 +329,6 @@ public partial class FileEditorForm : Form
             }
 
             Controls.SetChildIndex(file.Handle, 1);
-
-            bool originalNotSelected = (string)tS_VersionSelector.SelectedItem != Original;
-            tS_Include.Enabled = originalNotSelected;
-            tS_SaveVersion_Overwrite.Enabled = originalNotSelected && file.EditedControls.Count > 0;
 
             UpdateFileEditStatus();
         }
