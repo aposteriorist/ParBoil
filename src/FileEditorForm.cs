@@ -13,12 +13,16 @@ namespace ParBoil
 
     public partial class FileEditorForm : Form
     {
+        private const string FirstLoadBuffer = "FirstLoadBuffer";
+
         public FileEditorForm(Node node)
         {
             InitializeComponent();
 
             this.node = node;
             file = node.GetFormatAs<RGGFormat>();
+            if (!node.Tags.ContainsKey(FirstLoadBuffer))
+                node.Tags[FirstLoadBuffer] = file;
             Text += node.Name;
 
             WorkingFolder = PM.Project + node.Path[1..];
@@ -294,6 +298,7 @@ namespace ParBoil
 
                 if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
                 {
+                    file = node.Tags[FirstLoadBuffer];
                     LoadVersion(node.Tags["SelectedVersion"]);
 
                     respondToEdits = false;
