@@ -112,23 +112,52 @@ namespace ParBoil
             return jsonStream;
         }
 
+        private void CopyBufferToStorage(string slot = "")
+        {
+            var format = file.CopyFormat(duplicateStream: true);
+            format.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+
+            if (slot == "")
+                node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = format;
+            else
+                node.Tags["LoadedVersions"][slot] = format;
+
+            if (!Controls.Contains(format.Handle))
+                Controls.Add(format.Handle);
+        }
+
+        private void StoreBufferAsVersion(string? version = null, bool overwrite = false)
+        {
+            version ??= node.Tags["SelectedVersion"];
+
+            if (overwrite || !node.Tags["LoadedVersions"].ContainsKey(version))
+            {
+                CopyBufferToStorage(version);
+                if (!file.Enabled) file.EnableControls(true, EditableColor);
+            }
+        }
+
+        private void ApplyEditsIfAny()
+        {
+            if (file.EditedControls.Count > 0)
+            {
+                file.ApplyEdits();
+                UpdateFileEditStatus();
+            }
+        }
+
+        private void RevertEditsIfAny()
+        {
+            if (file.EditedControls.Count > 0)
+            {
+                file.RevertEdits();
+                UpdateFileEditStatus();
+            }
+        }
+
         private void SaveNewVersion(string name = "", bool selectNewVersion = true)
         {
-            if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
-            {
-                var previousVersion = file.CopyFormat(duplicateStream: true);
-                previousVersion.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
-                node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = previousVersion;
-                if (!Controls.Contains(previousVersion.Handle))
-                    Controls.Add(previousVersion.Handle);
-                if (!file.Enabled)
-                {
-                    file.EnableControls(true, EditableColor);
-                }
-            }
-
-            file.ApplyEdits();
-            UpdateFileEditStatus();
+            ApplyEditsIfAny();
 
             if (name == "")
             {
@@ -276,22 +305,12 @@ namespace ParBoil
             // (!node.Tags.ContainsKey("SelectedVersion") should be an error if it occurs here.
             if (tS_VersionSelector.SelectedIndex != tS_VersionSelector.Items.IndexOf(node.Tags["SelectedVersion"]))
             {
+                StoreBufferAsVersion();
+
                 if (file.EditedControls.Count > 0)
                 {
                     // Do you want to save your changes as a new version automatically?
                     SaveNewVersion(selectNewVersion: false);
-                }
-                else if (!node.Tags["LoadedVersions"].ContainsKey(node.Tags["SelectedVersion"]))
-                {
-                    var previousVersion = file.CopyFormat(duplicateStream: true);
-                    previousVersion.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
-                    node.Tags["LoadedVersions"][node.Tags["SelectedVersion"]] = previousVersion;
-                    if (!Controls.Contains(previousVersion.Handle))
-                        Controls.Add(previousVersion.Handle);
-                    if (!file.Enabled)
-                    {
-                        file.EnableControls(true, EditableColor);
-                    }
                 }
 
                 node.Tags["SelectedVersion"] = tS_VersionSelector.SelectedItem;
@@ -322,14 +341,14 @@ namespace ParBoil
             }
         }
 
-        private void tS_Revert_Click(object sender, EventArgs e)
-        {
-            file.RevertEdits();
-            UpdateFileEditStatus();
-        }
+        private void tS_Revert_Click(object sender, EventArgs e) => RevertEditsIfAny();
 
         private void tS_SaveVersion_Overwrite_Click(object sender, EventArgs e) => SaveVersion();
-        private void tS_SaveNewVersion_DefaultName_Click(object sender, EventArgs e) => SaveNewVersion();
+        private void tS_SaveNewVersion_DefaultName_Click(object sender, EventArgs e)
+        {
+            StoreBufferAsVersion();
+            SaveNewVersion();
+        }
 
         private void tS_SaveNewVersion_WithName_Click(object sender, EventArgs e)
         {
@@ -338,7 +357,10 @@ namespace ParBoil
             var result = ShowNamePrompt(ref name);
 
             if (result != DialogResult.Cancel)
+            {
+                StoreBufferAsVersion();
                 SaveNewVersion(name);
+            }
         }
 
         private DialogResult ShowNamePrompt(ref string name)
@@ -483,6 +505,7 @@ namespace ParBoil
                     if (ShowNamePrompt(ref name) == DialogResult.Cancel)
                         goto case 3;
 
+                    StoreBufferAsVersion();
                     SaveNewVersion(name);
                     MessageBox.Show("Version saved.");
                     break;
