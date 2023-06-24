@@ -19,8 +19,8 @@ public partial class FileEditorForm : Form
 
         this.node = node;
         file = node.GetFormatAs<RGGFormat>();
-        if (!node.Tags.ContainsKey(FirstLoadBuffer))
-            node.Tags[FirstLoadBuffer] = file;
+        if (!node.Tags.ContainsKey(Buffer))
+            node.Tags[Buffer] = file;
         Text += node.Name;
 
         WorkingFolder = Project + node.Path[1..];
@@ -49,8 +49,8 @@ public partial class FileEditorForm : Form
             }
             else
             {
-                node.Tags[FirstLoadBuffer].GenerateControls(Size, base.ForeColor, EditableColor, base.BackColor, EditorFont);
-                Controls.Add(node.Tags[FirstLoadBuffer].Handle);
+                node.Tags[Buffer].GenerateControls(Size, base.ForeColor, EditableColor, base.BackColor, EditorFont);
+                Controls.Add(node.Tags[Buffer].Handle);
 
                 PopulateVersionSelector();
                 node.Tags[SelectedVersion] = node.Tags[IncludedVersion];
@@ -311,7 +311,7 @@ public partial class FileEditorForm : Form
 
             if (!node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
             {
-                file = node.Tags[FirstLoadBuffer];
+                file = node.Tags[Buffer];
                 LoadVersion(node.Tags[SelectedVersion]);
 
                 respondToEdits = false;

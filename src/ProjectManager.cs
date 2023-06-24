@@ -26,7 +26,7 @@ internal class ProjectManager
     internal const string LoadedVersions = "LoadedVersions";
     internal const string IncludedVersion = "IncludedVersion";
     internal const string SelectedVersion = "SelectedVersion";
-    internal const string FirstLoadBuffer = "FirstLoadBuffer";
+    internal const string Buffer = "Buffer";
 
     private static ParArchiveReaderParameters readerParams;
     private static ParArchiveWriterParameters writerParams;
@@ -125,7 +125,7 @@ internal class ProjectManager
                 using var json = DataStreamFactory.FromFile(includedFileJSON, FileOpenMode.Read);
                 oldFormat.LoadFromJSON(json);
 
-                file.Tags[FirstLoadBuffer] = oldFormat;
+                file.Tags[Buffer] = oldFormat;
 
                 var newStream = Program.CopyStreamFromFile(includedFile, FileOpenMode.Read);
                 var newFormat = oldFormat.CopyFormat(newStream, true);
@@ -191,9 +191,9 @@ internal class ProjectManager
 
     public static void ExcludeFile(Node file)
     {
-        if (file.Tags.ContainsKey(IncludedVersion) && file.Tags.ContainsKey(FirstLoadBuffer))
+        if (file.Tags.ContainsKey(IncludedVersion) && file.Tags.ContainsKey(Buffer))
         {
-            file.ChangeFormat(file.Tags[FirstLoadBuffer], disposePreviousFormat: false);
+            file.ChangeFormat(file.Tags[Buffer], disposePreviousFormat: false);
 
             includedNodes.Remove(file);
 
