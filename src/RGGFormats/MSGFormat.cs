@@ -258,16 +258,28 @@ namespace ParBoil.RGGFormats
             Timestamp = msg.Timestamp;
         }
 
-        public override MSGFormat CopyFormat(bool duplicateStream = true)
+        public override MSGFormat CopyFormat(DataStream? newStream = null, bool duplicateStream = false)
         {
             DataStream copyStream;
             if (duplicateStream)
             {
-                copyStream = DataStreamFactory.FromMemory();
-                Stream.WriteTo(copyStream);
+                if (newStream != null)
+                    copyStream = newStream;
+                else
+                {
+                    copyStream = DataStreamFactory.FromMemory();
+                    Stream.WriteTo(copyStream);
+                }
             }
             else
+            {
                 copyStream = Stream;
+                if (newStream != null)
+                {
+                    newStream.WriteTo(copyStream);
+                }
+            }
+
 
             var msg = new MSGFormat(copyStream)
             {

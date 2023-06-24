@@ -13,8 +13,6 @@ using static ProjectManager;
 
 public partial class FileEditorForm : Form
 {
-    private const string FirstLoadBuffer = "FirstLoadBuffer";
-
     public FileEditorForm(Node node)
     {
         InitializeComponent();
@@ -51,11 +49,10 @@ public partial class FileEditorForm : Form
             }
             else
             {
-                node.Tags[LoadedVersions][Original].GenerateControls(Size, base.ForeColor, EditableColor, base.BackColor, EditorFont);
-                Controls.Add(node.Tags[LoadedVersions][Original].Handle);
+                node.Tags[FirstLoadBuffer].GenerateControls(Size, base.ForeColor, EditableColor, base.BackColor, EditorFont);
+                Controls.Add(node.Tags[FirstLoadBuffer].Handle);
 
                 PopulateVersionSelector();
-                LoadVersion(node.Tags[IncludedVersion]);
                 node.Tags[SelectedVersion] = node.Tags[IncludedVersion];
                 tS_VersionSelector.SelectedItem = node.Tags[IncludedVersion];
                 file.Enabled = false;
@@ -111,7 +108,7 @@ public partial class FileEditorForm : Form
 
     private void CopyBufferToStorage(string slot = "")
     {
-        var format = file.CopyFormat(duplicateStream: true);
+        var format = file.CopyFormat(uniqueStream: true);
         format.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
 
         if (slot == "")
@@ -438,7 +435,7 @@ public partial class FileEditorForm : Form
 
     private void tS_Include_CurrentVersion_Click(object sender, EventArgs e)
     {
-        if (node.Tags[IncludedVersion] == null || node.Tags[IncludedVersion] != tS_VersionSelector.SelectedItem)
+        if (!node.Tags.ContainsKey(IncludedVersion) || node.Tags[IncludedVersion] != tS_VersionSelector.SelectedItem)
         {
             if (file.EditedControls.Count > 0)
             {
@@ -465,8 +462,7 @@ public partial class FileEditorForm : Form
             file.UpdateStream(overwrite: true);
 
             // Include the current version.
-            IncludeFile(node, file);
-            node.Tags[IncludedVersion] = tS_VersionSelector.SelectedItem;
+            IncludeFile(node, file, tS_VersionSelector.SelectedItem);
 
             // Disable the controls.
             file.EnableControls(false, BackColor);

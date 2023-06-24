@@ -34,7 +34,7 @@ namespace ParBoil.RGGFormats
 
         public abstract void LoadFromBin();
         public abstract void LoadFromJSON(DataStream json);
-        public abstract RGGFormat CopyFormat(bool duplicateStream = false);
+        public abstract RGGFormat CopyFormat(DataStream? newStream = null, bool duplicateStream = false);
 
         public abstract void GenerateControls(Size formSize, Color ForeColor, Color EditableColor, Color BackColor, Font font);
         public abstract void UpdateControls();

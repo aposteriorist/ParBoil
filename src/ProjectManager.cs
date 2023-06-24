@@ -26,6 +26,7 @@ internal class ProjectManager
     internal const string LoadedVersions = "LoadedVersions";
     internal const string IncludedVersion = "IncludedVersion";
     internal const string SelectedVersion = "SelectedVersion";
+    internal const string FirstLoadBuffer = "FirstLoadBuffer";
 
     private static ParArchiveReaderParameters readerParams;
     private static ParArchiveWriterParameters writerParams;
@@ -103,14 +104,16 @@ internal class ProjectManager
                 var file = Navigator.SearchNode(Par, split[0]);
 
                 string includedFile = $"{Project}{file.Path}/{file.Name}";
-                string originalJSON = $"{Project}{file.Path}/{Original}.json";
+                string includedFileJSON = $"{Project}{file.Path}/{split[1]}.json";
 
-                if (!File.Exists(includedFile) || !File.Exists(originalJSON))
+                if (!File.Exists(includedFile) || !File.Exists(includedFileJSON))
                 {
+                    MessageBox.Show($"Failed inclusion of {file.Path}/{file.Name} version {split[1]}.");
                     continue;
                 }
 
                 file.Tags[IncludedVersion] = split[1];
+                includedNodes.Add(file);
 
                 if (file.GetFormatAs<ParFile>().IsCompressed)
                     file.TransformWith<Decompressor>();
@@ -119,25 +122,16 @@ internal class ProjectManager
 
                 var oldFormat = file.GetFormatAs<RGGFormat>();
 
-                using var json = DataStreamFactory.FromFile(originalJSON, FileOpenMode.Read);
+                using var json = DataStreamFactory.FromFile(includedFileJSON, FileOpenMode.Read);
                 oldFormat.LoadFromJSON(json);
 
-                file.Tags[LoadedVersions] = new Dictionary<string, RGGFormat>();
-                file.Tags[LoadedVersions][Original] = oldFormat;
-
-                includedNodes.Add(file);
+                file.Tags[FirstLoadBuffer] = oldFormat;
 
                 var newStream = Program.CopyStreamFromFile(includedFile, FileOpenMode.Read);
-                var newFormat = new ParFile(newStream)
-                {
-                    CanBeCompressed = true,
-                    IsCompressed = false,
-                    WasCompressed = oldFormat.WasCompressed,
-                    CompressionVersion = oldFormat.CompressionVersion,
-                    DecompressedSize = (uint)newStream.Length,
-                    Attributes = oldFormat.Attributes,
-                    Timestamp = oldFormat.Timestamp,
-                };
+                var newFormat = oldFormat.CopyFormat(newStream, true);
+
+                file.Tags[LoadedVersions] = new Dictionary<string, RGGFormat>();
+                file.Tags[LoadedVersions][file.Tags[IncludedVersion]] = newFormat;
 
                 file.ChangeFormat(newFormat, disposePreviousFormat: false);
             }
@@ -173,7 +167,7 @@ internal class ProjectManager
                 n.Stream.WriteTo(path + n.Path + n.Name);
     }
 
-    public static void IncludeFile(Node file, ParFile newFormat)
+    public static void IncludeFile(Node file, ParFile newFormat, object versionTag)
     {
         if (!file.Tags.ContainsKey("LoadedVersions"))
         {
@@ -182,6 +176,7 @@ internal class ProjectManager
 
         if (!file.Tags["LoadedVersions"].ContainsKey(Original))
             file.Tags["LoadedVersions"][Original] = file.Format;
+        file.Tags[IncludedVersion] = versionTag;
 
         if (!includedNodes.Contains(file))
             includedNodes.Add(file);
@@ -196,11 +191,13 @@ internal class ProjectManager
 
     public static void ExcludeFile(Node file)
     {
-        if (file.Tags.ContainsKey(LoadedVersions) && file.Tags[LoadedVersions].ContainsKey(Original))
+        if (file.Tags.ContainsKey(IncludedVersion) && file.Tags.ContainsKey(FirstLoadBuffer))
         {
-            file.ChangeFormat(file.Tags[LoadedVersions][Original], disposePreviousFormat: false);
+            file.ChangeFormat(file.Tags[FirstLoadBuffer], disposePreviousFormat: false);
 
             includedNodes.Remove(file);
+
+            file.Tags.Remove(IncludedVersion);
         }
         // Hitting else is an error.
     }
