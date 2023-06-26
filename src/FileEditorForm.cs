@@ -56,6 +56,8 @@ public partial class FileEditorForm : Form
                 node.Tags[SelectedVersion] = node.Tags[IncludedVersion];
                 tS_VersionSelector.SelectedItem = node.Tags[IncludedVersion];
                 file.Enabled = false;
+
+                tS_Exclude.Enabled = true;
             }
 
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
@@ -472,6 +474,21 @@ public partial class FileEditorForm : Form
 
             // Disable the controls.
             file.EnableControls(false, BackColor);
+
+            // Enable the Exclude button.
+            tS_Exclude.Enabled = true;
+        }
+    }
+
+    private void tS_Exclude_Click(object sender, EventArgs e)
+    {
+        if (node.Tags.ContainsKey(IncludedVersion))
+        {
+            node.GetFormatAs<RGGFormat>().EnableControls(true, EditableColor);
+
+            ExcludeFile(node);
+
+            tS_Exclude.Enabled = false;
         }
     }
 
