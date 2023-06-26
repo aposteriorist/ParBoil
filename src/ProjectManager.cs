@@ -44,10 +44,9 @@ internal class ProjectManager
 
     public static void Close()
     {
+        Directory.SetCurrentDirectory(Project);
         if (includedNodes != null && includedNodes.Count > 0)
         {
-            Directory.SetCurrentDirectory(Project);
-
             using var includeFile = DataStreamFactory.FromFile($"{Name}.include", FileOpenMode.Write);
 
             var writer = new Yarhl.IO.TextWriter(includeFile);
@@ -55,6 +54,10 @@ internal class ProjectManager
             {
                 writer.WriteLine($"{node.Path}:{node.Tags[IncludedVersion]}");
             }
+        }
+        else if (File.Exists($"{Name}.include"))
+        {
+            File.Delete($"{Name}.include");
         }
 
         if (Par != null)
@@ -103,7 +106,7 @@ internal class ProjectManager
                 var split = includePath.Split(':');
                 var file = Navigator.SearchNode(Par, split[0]);
 
-                string includedFile = $"{Project}{file.Path}/{file.Name}";
+                string includedFile = $"{Project}{file.Path}/INCLUDED";
                 string includedFileJSON = $"{Project}{file.Path}/{split[1]}.json";
 
                 if (!File.Exists(includedFile) || !File.Exists(includedFileJSON))
@@ -169,13 +172,6 @@ internal class ProjectManager
 
     public static void IncludeFile(Node file, ParFile newFormat, object versionTag)
     {
-        if (!file.Tags.ContainsKey("LoadedVersions"))
-        {
-            file.Tags["LoadedVersions"] = new Dictionary<string, RGGFormat>();
-        }
-
-        if (!file.Tags["LoadedVersions"].ContainsKey(Original))
-            file.Tags["LoadedVersions"][Original] = file.Format;
         file.Tags[IncludedVersion] = versionTag;
 
         if (!includedNodes.Contains(file))
@@ -184,7 +180,7 @@ internal class ProjectManager
         file.ChangeFormat(newFormat, disposePreviousFormat: false);
 
         // Write the modified stream out to disk as a file, to be loaded from if need be.
-        newFormat.Stream.WriteTo($"{Project}{file.Path}/{file.Name}");
+        newFormat.Stream.WriteTo($"{Project}{file.Path}/INCLUDED");
 
         // .include file will be written to on close, not here.
     }
@@ -198,6 +194,8 @@ internal class ProjectManager
             includedNodes.Remove(file);
 
             file.Tags.Remove(IncludedVersion);
+
+            File.Delete($"{Project}{file.Path}/INCLUDED");
         }
         // Hitting else is an error.
     }
