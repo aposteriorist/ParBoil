@@ -456,6 +456,14 @@ public partial class FileEditorForm : Form
                 node.Tags[LoadedVersions][node.Tags[IncludedVersion]].EnableControls(true, EditableColor);
             }
 
+            // Store the buffer as a version if needed, then swap to that stored version.
+            // (If a stored version exists, we're already looking at it.)
+            if (!node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
+            {
+                file = CopyBufferToStorage();
+                Controls.SetChildIndex(file.Handle, 1);
+            }
+
             // Update the stream so that it matches the RGGFormat's fields.
             file.UpdateStream(overwrite: true);
 
