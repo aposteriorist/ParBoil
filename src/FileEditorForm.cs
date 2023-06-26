@@ -244,12 +244,16 @@ public partial class FileEditorForm : Form
                 tS_Include.Enabled = true;
                 tS_SaveVersion_Overwrite.Enabled = originalNotSelected;
             }
-            else if (file.EditedControls.Count == 0 && Text[^1] == '*')
+            else
             {
-                Text = Text[..^1];
-                tS_Revert.Enabled = false;
                 tS_Include.Enabled = originalNotSelected;
-                tS_SaveVersion_Overwrite.Enabled = false;
+
+                if (file.EditedControls.Count == 0 && Text[^1] == '*')
+                {
+                    Text = Text[..^1];
+                    tS_Revert.Enabled = false;
+                    tS_SaveVersion_Overwrite.Enabled = false;
+                }
             }
         }
     }
