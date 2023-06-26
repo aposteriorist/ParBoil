@@ -453,7 +453,7 @@ public partial class FileEditorForm : Form
             }
 
             // Re-enable the previously included version.
-            if (node.Tags[IncludedVersion] != null)
+            if (node.Tags.ContainsKey(IncludedVersion))
             {
                 node.Tags[LoadedVersions][node.Tags[IncludedVersion]].EnableControls(true, EditableColor);
             }
