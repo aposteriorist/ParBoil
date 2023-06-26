@@ -59,6 +59,7 @@ public partial class FileEditorForm : Form
             }
 
             file.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+            Controls.Add(file.Handle);
         }
         else
         {
@@ -67,6 +68,8 @@ public partial class FileEditorForm : Form
             foreach (RGGFormat format in node.Tags[LoadedVersions].Values)
                 Controls.Add(format.Handle);
 
+            Controls.Add(node.Tags[Buffer].Handle);
+
             tS_VersionSelector.SelectedItem = node.Tags[SelectedVersion];
 
             if (node.Tags[LoadedVersions].ContainsKey(node.Tags[SelectedVersion]))
@@ -74,9 +77,6 @@ public partial class FileEditorForm : Form
         }
 
         tS_VersionSelector.Enabled = tS_VersionSelector.Items.Count > 1;
-
-        if (!Controls.Contains(file.Handle))
-            Controls.Add(file.Handle);
 
         Controls.SetChildIndex(file.Handle, 1);
 
@@ -106,18 +106,18 @@ public partial class FileEditorForm : Form
         return jsonStream;
     }
 
-    private void CopyBufferToStorage(string slot = "")
+    private RGGFormat CopyBufferToStorage(string slot = "")
     {
         var format = file.CopyFormat(uniqueStream: true);
         format.GenerateControls(Size, ForeColor, EditableColor, BackColor, EditorFont);
+        Controls.Add(format.Handle);
 
         if (slot == "")
             node.Tags[LoadedVersions][node.Tags[SelectedVersion]] = format;
         else
             node.Tags[LoadedVersions][slot] = format;
 
-        if (!Controls.Contains(format.Handle))
-            Controls.Add(format.Handle);
+        return format;
     }
 
     private void StoreBufferAsVersion(string? version = null, bool overwrite = false)
@@ -321,8 +321,6 @@ public partial class FileEditorForm : Form
             else
             {
                 file = node.Tags[LoadedVersions][node.Tags[SelectedVersion]];
-                if (!Controls.Contains(file.Handle))
-                    Controls.Add(file.Handle);
             }
 
             Controls.SetChildIndex(file.Handle, 1);
